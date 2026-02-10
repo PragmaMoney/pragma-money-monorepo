@@ -17,13 +17,6 @@ contract RedeployWallet is Script {
     address constant SERVICE_REGISTRY = 0x1Ace3c1Ac3E4D849373017B43804Eb515516950E;
     address constant REPUTATION_REPORTER = 0x3FB6ed48640ec7B90E6Ff642c533098c5c80d0c4;
 
-    // Uniswap + app tokens
-    address constant UNISWAP_ROUTER = 0x492E6456D9528771018DeB9E87ef7750EF184104;
-    address constant SUPER_FAKE_USDC = 0x04eAFA8141F06Ff882b5Aa21064cCBd9E48DfbB8;
-    address constant BINGER_TOKEN = 0xC8308c6bc561A46275256981dd17298c31300595;
-    address constant RFUSDC = 0x8ac2EeF8EA8f63bc6109c22f7c505962B96cEab0;
-    address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
-
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
@@ -47,18 +40,10 @@ contract RedeployWallet is Script {
         factory.setTrustedContract(SERVICE_REGISTRY, true);
         factory.setTrustedContract(REPUTATION_REPORTER, true);
         factory.setTrustedContract(REAL_USDC, true);
-        factory.setTrustedContract(UNISWAP_ROUTER, true);
-        factory.setTrustedContract(SUPER_FAKE_USDC, true);
-        factory.setTrustedContract(BINGER_TOKEN, true);
-        factory.setTrustedContract(RFUSDC, true);
-        factory.setTrustedContract(PERMIT2, true);
         console2.log("3. Set trusted contracts");
 
         // 4. Set global trusted tokens
         factory.setTrustedToken(REAL_USDC, true);
-        factory.setTrustedToken(SUPER_FAKE_USDC, true);
-        factory.setTrustedToken(BINGER_TOKEN, true);
-        factory.setTrustedToken(RFUSDC, true);
         console2.log("4. Set trusted tokens");
 
         vm.stopBroadcast();

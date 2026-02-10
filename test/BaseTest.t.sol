@@ -21,8 +21,8 @@ contract BaseTest is Test {
     address internal validator2 = address(0x2222);
 
     // === Base Sepolia fork placeholders (override with env) ===
-    string internal constant DEFAULT_CHAIN = "baseSepolia";
-    string internal constant DEFAULT_RPC_ENV = "BASE_SEPOLIA_RPC_URL";
+    string internal constant DEFAULT_CHAIN = "monadTestnet";
+    string internal constant DEFAULT_RPC_ENV = "MONAD_TESTNET_RPC_URL";
 
     IERC20 internal usdc;
 

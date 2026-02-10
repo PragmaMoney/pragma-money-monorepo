@@ -25,7 +25,6 @@ contract RedeployFactory is Script {
         factory.setTrustedContract(0x70B74F9D67385d363d4bdd3079b72E60f8EcbaFa, true); // serviceRegistry
         factory.setTrustedContract(0xC038404e1fe7dc1FBD19773dB922ced6E2a896B8, true); // reputationReporter
         factory.setTrustedContract(REAL_USDC, true);
-        factory.setTrustedContract(0x492E6456D9528771018DeB9E87ef7750EF184104, true); // uniswapRouter
         factory.setTrustedContract(0x04eAFA8141F06Ff882b5Aa21064cCBd9E48DfbB8, true); // superFakeUSDC
         factory.setTrustedContract(0xC8308c6bc561A46275256981dd17298c31300595, true); // bingerToken
         factory.setTrustedContract(0x8ac2EeF8EA8f63bc6109c22f7c505962B96cEab0, true); // rfusdc

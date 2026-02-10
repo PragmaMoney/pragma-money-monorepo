@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 contract Addresses {
-    string public constant baseSepolia = "baseSepolia";
+    string public constant monadTestnet = "monadTestnet";
 
     error Addresses__ZeroAddress(string chainName, string valueName);
     error Addresses__ZeroBytes32(string chainName, string valueName);
@@ -11,7 +11,7 @@ contract Addresses {
     mapping(string => mapping(string => bytes32)) public values;
 
     constructor() {
-        _addBaseSepoliaValues();
+        _addMonadTestnetValues();
     }
 
     /// @notice Read a stored address for a given chain and value name
@@ -43,12 +43,11 @@ contract Addresses {
         setValue(overrideOk, chainName, valueName, toBytes32(value));
     }
 
-    /// @notice Populate Base Sepolia default addresses
-    function _addBaseSepoliaValues() private {
-        values[baseSepolia]["USDC"] = toBytes32(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
-        values[baseSepolia]["IdentityRegistry"] = toBytes32(0x8004A818BFB912233c491871b3d84c89A494BD9e);
-        values[baseSepolia]["ReputationRegistry"] = toBytes32(0x8004B663056A597Dffe9eCcC1965A193B7388713);
-        values[baseSepolia]["UniswapUniversalRouter"] = toBytes32(0x492E6456D9528771018DeB9E87ef7750EF184104);
+    /// @notice Populate Monad Testnet default addresses
+    function _addMonadTestnetValues() private {
+        values[monadTestnet]["USDC"] = toBytes32(0x534b2f3A21130d7a60830c2Df862319e593943A3);
+        values[monadTestnet]["IdentityRegistry"] = toBytes32(0x8004A818BFB912233c491871b3d84c89A494BD9e);
+        values[monadTestnet]["ReputationRegistry"] = toBytes32(0x8004B663056A597Dffe9eCcC1965A193B7388713);
     }
 
     /// @notice Convert an address to bytes32

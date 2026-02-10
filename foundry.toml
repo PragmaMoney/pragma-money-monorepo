@@ -22,23 +22,9 @@ fs_permissions = [
 
 # Network configurations
 [rpc_endpoints]
-base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
-arc = "${ARC_RPC_URL}"
-arc_testnet = "https://rpc.testnet.arc.network"
+monad_testnet = "https://testnet-rpc.monad.xyz"
 
-[etherscan]
-base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=84532", chain = 84532 }
-arc_testnet = { key = "${ARCSCAN_API_KEY}", url = "https://testnet.arcscan.app/api", chain = 5042002 }
-
-# Base Sepolia network profile
-[profile.base_sepolia]
-chain_id = 84532
-rpc_url = "${BASE_SEPOLIA_RPC_URL}"
-
-# Arc Testnet network profile
-[profile.arc]
-chain_id = 5042002
-
-[profile.arc_testnet]
-chain_id = 5042002
-rpc_url = "https://rpc.testnet.arc.network"
+# Monad Testnet network profile
+[profile.monad_testnet]
+chain_id = 10143
+rpc_url = "https://testnet-rpc.monad.xyz"
