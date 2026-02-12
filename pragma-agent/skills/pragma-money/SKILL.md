@@ -2,7 +2,7 @@
 name: pragma-money
 description: Register on-chain, manage wallets, browse services, and pay for API calls on PragmaMoney (Monad Testnet)
 user-invocable: true
-metadata: {"openclaw": {"emoji": "\ud83d\udcb0", "requires": {"bins": ["pragma-agent"], "env": ["PIMLICO_API_KEY"]}, "primaryEnv": "PIMLICO_API_KEY", "install": [{"id": "npm", "kind": "node", "package": "pragma-agent", "bins": ["pragma-agent"], "label": "Install pragma-agent (npm)"}]}}
+metadata: {"openclaw": {"emoji": "\ud83d\udcb0", "requires": {"bins": ["pragma-agent"], "env": ["BUNDLER_URL"]}, "primaryEnv": "BUNDLER_URL", "install": [{"id": "npm", "kind": "node", "package": "pragma-agent", "bins": ["pragma-agent"], "label": "Install pragma-agent (npm)"}]}}
 ---
 
 # PragmaMoney
@@ -38,7 +38,7 @@ pragma-agent register \
 ```
 
 This takes 30-60 seconds. **Do not interrupt or re-run.** The command:
-- Gets ETH funding from the relayer (for on-chain gas)
+- Gets MON funding from the relayer (for on-chain gas)
 - Mints your identity NFT on-chain
 - Deploys your smart wallet with spending policy
 - Binds the smart wallet to your identity
@@ -53,7 +53,7 @@ On success you get `agentId`, `smartAccountAddress`, and `poolAddress`.
 pragma-agent wallet balance
 ```
 
-You should see ETH in both EOA and smart account, and 0 USDC until investors fund your pool.
+You should see MON in both EOA and smart account, and 0 USDC until investors fund your pool.
 
 ## Registering a Service
 
@@ -67,11 +67,11 @@ pragma-agent services register \
   --type API
 ```
 
-This registers the service on the ServiceRegistry contract via a UserOp (smart wallet pays gas). The proxy is also notified so it can route traffic. On success you get a `serviceId` and `proxyUrl`.
+This registers the service on the ServiceRegistry contract via a UserOp (smart wallet pays gas in MON). The proxy is also notified so it can route traffic. On success you get a `serviceId` and `proxyUrl`.
 
 Service types: `COMPUTE`, `STORAGE`, `API`, `AGENT`, `OTHER` (default: `API`).
 
-**Requirements**: Agent must be registered (identity + wallet + pool). Smart wallet needs ETH for gas.
+**Requirements**: Agent must be registered (identity + wallet + pool). Smart wallet needs MON for gas.
 
 ## Using Services
 
@@ -108,7 +108,7 @@ pragma-agent pay verify --payment-id 0x...
 
 ```bash
 pragma-agent wallet address          # EOA + smart account + registration status
-pragma-agent wallet balance          # ETH + USDC balances for both EOA and smart account
+pragma-agent wallet balance          # MON + USDC balances for both EOA and smart account
 pragma-agent wallet policy           # spending policy: daily limit, daily spend, expiry date
 ```
 
@@ -129,7 +129,7 @@ pragma-agent pool pull --amount 5.00          # withdraw 5 USDC from pool into s
 
 **Pool pull uses a UserOp** (ERC-4337 transaction through EntryPoint). Your smart wallet pays the gas from its own ETH balance.
 
-If `pool pull` fails with a gas error, your smart wallet may need more ETH. Report this to the user.
+If `pool pull` fails with a gas error, your smart wallet may need more MON. Report this to the user.
 
 ## Investing in Agent Pools
 
@@ -182,7 +182,7 @@ The invest command transparently:
 | `Agent not registered` | Run `pragma-agent register` |
 | `Insufficient USDC balance` | Run `pragma-agent pool pull --amount X` |
 | `Daily cap exceeded` | Wait until tomorrow (resets midnight UTC) |
-| `PIMLICO_API_KEY not set` | Set the `PIMLICO_API_KEY` environment variable |
+| `BUNDLER_URL not set` | Set the `BUNDLER_URL` environment variable |
 | `Fund phase failed` | The relayer proxy is not running or unreachable |
 | `Agent is already registered` | Already set up, proceed to use services |
 | `UserOp failed on-chain` | Check smart wallet ETH balance and spending policy |
@@ -192,5 +192,6 @@ The invest command transparently:
 - USDC uses 6 decimals. Use human-readable amounts in commands (e.g. `5.00` not `5000000`).
 - Registration is idempotent per wallet. Re-running returns the existing registration.
 - The wallet file is at `~/.openclaw/pragma-agent/wallet.json`.
+- `BUNDLER_URL` must point to a Monad testnet 4337 bundler (Alchemy URL or equivalent).
 - `RELAYER_URL` must be set to the PragmaMoney proxy's public URL (default is localhost, which only works for local dev).
-- Pool pulls and service payments go through ERC-4337 UserOperations. The smart wallet pays gas from its own ETH.
+- Pool pulls and service payments go through ERC-4337 UserOperations. The smart wallet pays gas from its own MON.

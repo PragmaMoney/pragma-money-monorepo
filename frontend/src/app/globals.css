@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-body text-pragma-text bg-pragma-dark antialiased selection:bg-pragma-primary selection:text-white;
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.pragma-primary') theme('colors.pragma-surface');
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
+
+  /* Force AsciiRenderer (which uses tables) to use our font */
+  table {
+    font-family: 'Courier Prime', monospace !important;
+  }
+
+  /* Ensure readable text on light surfaces (same element) */
+  .bg-white.text-lobster-dark {
+    @apply text-black;
+  }
+  .bg-white.text-lobster-text {
+    @apply text-slate-600;
+  }
+
+  /* Ensure readable text on red gradient surfaces */
+  .bg-gradient-lobster .text-lobster-dark,
+  .bg-gradient-lobster.text-lobster-dark {
+    @apply text-white;
+  }
+  .bg-gradient-lobster .text-lobster-text,
+  .bg-gradient-lobster.text-lobster-text {
+    @apply text-white/80;
+  }
+  .bg-gradient-lobster .text-lobster-primary,
+  .bg-gradient-lobster.text-lobster-primary {
+    @apply text-white;
+  }
+
+  /* Light cards default to dark text */
+  .card,
+  .card-hover {
+    @apply text-slate-900;
+  }
+  .card .text-lobster-dark,
+  .card-hover .text-lobster-dark {
+    @apply text-slate-900;
+  }
+  .card .text-lobster-text,
+  .card-hover .text-lobster-text {
+    @apply text-slate-600;
+  }
+
+  /* Dark surface blocks should force light text */
+  .bg-lobster-surface .text-lobster-dark {
+    @apply text-white;
+  }
+  .bg-lobster-surface .text-lobster-text {
+    @apply text-slate-300;
+  }
+}
+
+@layer utilities {
+
+  /* Custom scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-pragma-surface rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-pragma-primary rounded-full hover:bg-pragma-accent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-pragma-accent;
+  }
+
+  /* Override dark hover surfaces to use lobster hover instead */
+  .hover\:bg-lobster-surface:hover {
+    background-color: theme('colors.lobster-hover') !important;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-lobster-primary text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-lobster-hover hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-lobster-primary focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-lobster-primary border-2 border-lobster-primary px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:bg-lobster-surface hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-lobster-primary focus:ring-offset-2;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-md p-6 transition-all duration-200 hover:shadow-lg;
+  }
+
+  .card-hover {
+    @apply bg-white rounded-2xl shadow-md p-6 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-lobster-border bg-white text-black placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-lobster-primary focus:border-transparent transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .skeleton {
+    @apply animate-pulse bg-gradient-to-r from-lobster-surface via-lobster-border to-lobster-surface bg-[length:200%_100%] rounded;
+  }
+}
+
+/* Loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  @apply outline-none ring-2 ring-lobster-primary ring-offset-2;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-lobster-primary/20 text-lobster-dark;
+}

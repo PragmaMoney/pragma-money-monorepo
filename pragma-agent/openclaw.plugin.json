@@ -12,14 +12,14 @@
         "type": "string",
         "description": "Proxy relayer URL (default: http://localhost:4402)"
       },
-      "pimlicoApiKey": {
+      "bundlerUrl": {
         "type": "string",
-        "description": "Pimlico API key for UserOp bundler"
+        "description": "Bundler RPC URL for UserOp submission (e.g., Alchemy)"
       }
     }
   },
   "uiHints": {
-    "pimlicoApiKey": { "label": "Pimlico API Key", "sensitive": true },
+    "bundlerUrl": { "label": "Bundler URL", "placeholder": "https://monad-testnet.g.alchemy.com/v2/<key>" },
     "relayerUrl": { "label": "Relayer URL", "placeholder": "http://localhost:4402" }
   }
 }
