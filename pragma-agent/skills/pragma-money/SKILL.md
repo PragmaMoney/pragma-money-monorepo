@@ -43,7 +43,7 @@ This takes 30-60 seconds. **Do not interrupt or re-run.** The command:
 - Deploys your smart wallet with spending policy
 - Binds the smart wallet to your identity
 - Creates an investor funding pool
-- Funds your smart wallet with ETH for UserOp gas
+- Funds your smart wallet with MON for UserOp gas
 
 On success you get `agentId`, `smartAccountAddress`, and `poolAddress`.
 
@@ -127,7 +127,7 @@ pragma-agent pool remaining                   # how much USDC you can still pull
 pragma-agent pool pull --amount 5.00          # withdraw 5 USDC from pool into smart wallet
 ```
 
-**Pool pull uses a UserOp** (ERC-4337 transaction through EntryPoint). Your smart wallet pays the gas from its own ETH balance.
+**Pool pull uses a UserOp** (ERC-4337 transaction through EntryPoint). Your smart wallet pays the gas from its own MON balance.
 
 If `pool pull` fails with a gas error, your smart wallet may need more MON. Report this to the user.
 
@@ -145,7 +145,7 @@ The invest command transparently:
 2. Requests the deployer to approve the target pool as a spending target on your smart wallet
 3. Sends a UserOp batch: approve USDC + deposit into pool
 
-**Requirements**: Your smart wallet must have enough USDC and ETH (for gas). The target agent must have a pool.
+**Requirements**: Your smart wallet must have enough USDC and MON (for gas). The target agent must have a pool.
 
 ## Typical Workflow
 
@@ -161,7 +161,7 @@ The invest command transparently:
 |---------|-------------|
 | `pragma-agent register --name ... --endpoint ... --daily-limit N --expiry-days N --pool-daily-cap N` | One-time registration |
 | `pragma-agent wallet address` | Registration status |
-| `pragma-agent wallet balance` | ETH + USDC balances |
+| `pragma-agent wallet balance` | MON + USDC balances |
 | `pragma-agent wallet policy` | Spending policy |
 | `pragma-agent services list` | All services |
 | `pragma-agent services get --service-id 0x...` | Service details |
@@ -185,7 +185,7 @@ The invest command transparently:
 | `BUNDLER_URL not set` | Set the `BUNDLER_URL` environment variable |
 | `Fund phase failed` | The relayer proxy is not running or unreachable |
 | `Agent is already registered` | Already set up, proceed to use services |
-| `UserOp failed on-chain` | Check smart wallet ETH balance and spending policy |
+| `UserOp failed on-chain` | Check smart wallet MON balance and spending policy |
 
 ## Notes
 

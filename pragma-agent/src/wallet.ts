@@ -168,8 +168,8 @@ export async function handleWallet(input: WalletInput): Promise<string> {
         const eoaAddress = walletData.address;
         const reg = walletData.registration;
 
-        // Always fetch EOA ETH balance
-        const ethBalance = await provider.getBalance(eoaAddress);
+        // Always fetch EOA MON balance (native gas token)
+        const monBalance = await provider.getBalance(eoaAddress);
 
         // Fetch USDC balance from smart account if registered, else EOA
         const balanceAddress = reg?.smartAccount ?? eoaAddress;
@@ -179,8 +179,8 @@ export async function handleWallet(input: WalletInput): Promise<string> {
         const result: Record<string, unknown> = {
           registered: reg !== null,
           eoaAddress,
-          ethBalance: formatEther(ethBalance),
-          ethBalanceWei: ethBalance.toString(),
+          monBalance: formatEther(monBalance),
+          monBalanceWei: monBalance.toString(),
           usdcAddress: balanceAddress,
           usdcBalance: formatUnits(usdcBalance, USDC_DECIMALS),
           usdcBalanceRaw: usdcBalance.toString(),
@@ -261,7 +261,7 @@ export async function handleWallet(input: WalletInput): Promise<string> {
 export const walletSchema = {
   name: "pragma-wallet",
   description:
-    "Manage the agent's PragmaMoney wallet on Monad Testnet. Get wallet address (EOA + smart account), check ETH/USDC balances, or read an AgentSmartAccount spending policy.",
+    "Manage the agent's PragmaMoney wallet on Monad Testnet. Get wallet address (EOA + smart account), check MON/USDC balances, or read an AgentSmartAccount spending policy.",
   input_schema: {
     type: "object" as const,
     properties: {

@@ -7,7 +7,7 @@
  * Steps:
  *   1.  Register Agent A (or skip if exists)
  *   2.  Register Agent B (or skip if exists)
- *   3.  Fund both smart accounts with ETH
+ *   3.  Fund both smart accounts with MON
  *   4.  Seed Agent A's pool with USDC
  *   5.  Verify Agent A's pool funded
  *   6.  Agent A pulls USDC from pool
@@ -329,7 +329,7 @@ async function main() {
     throw new Error("Both Agent A and Agent B registrations are required before continuing.");
   }
 
-  // ── Step 3: Fund both smart accounts with ETH ─────────────────────────────
+  // ── Step 3: Fund both smart accounts with MON ─────────────────────────────
   console.log(`--- Step 3: Fund smart accounts with ${ETH_FUND} MON ---`);
   const minEth = parseEther(ETH_FUND);
 

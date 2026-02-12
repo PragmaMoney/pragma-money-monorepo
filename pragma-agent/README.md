@@ -150,7 +150,7 @@ The proxy must be reachable from the VPS (public IP, ngrok tunnel, or Tailscale)
 The 3-phase registration ensures the agent EOA owns its identity NFT:
 
 ```
-1. POST /register-agent/fund     → Proxy sends 0.0005 ETH to agent EOA
+1. POST /register-agent/fund     → Proxy sends 0.0005 MON to agent EOA
 2. Agent tx: register()           → Agent EOA calls IdentityRegistry (owns NFT)
 3. POST /register-agent/setup     → Proxy deploys smart account + configures targets
 4. Agent tx: setAgentWallet()     → Agent EOA binds smart account to identity
@@ -171,8 +171,8 @@ The 3-phase registration ensures the agent EOA owns its identity NFT:
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| `Fund phase failed` | Proxy not running or deployer out of ETH | Start proxy, fund deployer |
-| `Failed to extract agentId` | register() tx failed | Check agent EOA has ETH for gas |
+| `Fund phase failed` | Proxy not running or deployer out of MON | Start proxy, fund deployer |
+| `Failed to extract agentId` | register() tx failed | Check agent EOA has MON for gas |
 | `NFT owner mismatch` | Wrong agentId | Verify agentId from register() tx |
 | `BadWallet (0x5c9c2255)` | Pool created before setAgentWallet | This is handled by 3-phase flow |
 | `setAgentWallet expired` | 5-min deadline passed | Re-run setup for fresh deadline |

@@ -50,7 +50,7 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
     const relayerUrl = input.relayerUrl ?? RELAYER_URL;
 
     // ─── Phase 1: POST /register-agent/fund ────────────────────────────────
-    // Proxy sends ETH to our EOA so we can call register() + setAgentWallet()
+    // Proxy sends MON to our EOA so we can call register() + setAgentWallet()
 
     const fundBody = {
       operatorAddress: walletData.address,
@@ -63,7 +63,7 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
       poolVestingDays: input.poolVestingDays ?? 30,
     };
 
-    console.log(`[pragma-register] Phase 1: Requesting ETH funding at ${relayerUrl}/register-agent/fund...`);
+    console.log(`[pragma-register] Phase 1: Requesting MON funding at ${relayerUrl}/register-agent/fund...`);
     const fundRes = await fetch(`${relayerUrl}/register-agent/fund`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -85,7 +85,7 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
       metadataURI: string;
     };
 
-    console.log(`[pragma-register] Phase 1 complete: funded ${fundData.amount} ETH, tx=${fundData.fundTxHash}`);
+    console.log(`[pragma-register] Phase 1 complete: funded ${fundData.amount} MON, tx=${fundData.fundTxHash}`);
 
     // ─── Agent calls register() on-chain ───────────────────────────────────
     // Agent EOA now owns the NFT (msg.sender = agent EOA)

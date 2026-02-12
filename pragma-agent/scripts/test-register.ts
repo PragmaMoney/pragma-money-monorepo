@@ -3,7 +3,7 @@
  *
  * Prerequisites:
  *   1. Proxy running: cd proxy && npm run dev
- *   2. Deployer has ETH on Monad Testnet for gas
+ *   2. Deployer has MON on Monad Testnet for gas
  *   3. (Optional) PIMLICO_API_KEY env var for UserOp tests
  *
  * Usage:
@@ -43,7 +43,7 @@ async function main() {
   // ── Step 2: Check balance ─────────────────────────────────────────────
   console.log("--- Step 2: Check balance ---");
   const balance = JSON.parse(await handleWallet({ action: "getBalance" }));
-  log("ETH", `${balance.ethBalance} ETH`);
+  log("MON", `${balance.monBalance} MON`);
   log("USDC", `${balance.usdcBalance} USDC (at ${balance.usdcAddress})`);
   console.log();
 
