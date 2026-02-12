@@ -11,6 +11,8 @@ You have the `pragma-agent` CLI. It lets you register an on-chain identity, depl
 
 All commands output JSON. Parse the JSON to understand the result. If a command fails, read the error and report it to the user.
 
+Native gas token naming rule: always call the native token `MON`. Do not label it as `ETH` or `ETH/MON` in user-facing responses.
+
 ## Getting Started (first-time setup)
 
 Before using any service, you must register. This creates three things:

@@ -179,6 +179,9 @@ export async function handleWallet(input: WalletInput): Promise<string> {
         const result: Record<string, unknown> = {
           registered: reg !== null,
           eoaAddress,
+          nativeTokenSymbol: "MON",
+          nativeBalance: formatEther(monBalance),
+          nativeBalanceWei: monBalance.toString(),
           monBalance: formatEther(monBalance),
           monBalanceWei: monBalance.toString(),
           usdcAddress: balanceAddress,
