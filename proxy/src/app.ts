@@ -16,6 +16,7 @@ import { fundAgentRouter } from "./routes/fundAgent.js";
 import { registerServiceRouter } from "./routes/registerService.js";
 import { allowTargetRouter } from "./routes/allowTarget.js";
 import { simulationRouter } from "./routes/simulation.js";
+import { reportRevenueRouter } from "./routes/reportRevenue.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 
@@ -134,6 +135,9 @@ app.use("/register-service", registerServiceRouter);
 
 // Generic target approval for smart accounts (used by pool invest, etc.)
 app.use("/allow-target", allowTargetRouter);
+
+// Revenue reporting for NATIVE_X402 MCP servers
+app.use("/report-revenue", reportRevenueRouter);
 
 // ---------------------------------------------------------------------------
 // Simulation Routes (admin)

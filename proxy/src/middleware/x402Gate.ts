@@ -29,11 +29,12 @@ const SERVICE_REGISTRY_ABI = [
 ];
 
 const SERVICE_REGISTRY_GETSERVICE_ABI = [
-  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, bool active, uint256 totalCalls, uint256 totalRevenue))",
+  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, uint8 paymentMode, bool active, uint256 totalCalls, uint256 totalRevenue))",
 ];
 
 const AGENT_FACTORY_ABI = [
   "function poolByAgentId(uint256 agentId) view returns (address)",
+  "function getFundingConfig(uint256 agentId) view returns (bool needsFunding, uint16 splitRatio)",
 ];
 
 const IDENTITY_REGISTRY_ABI = [
@@ -44,7 +45,6 @@ const ERC20_TRANSFER_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
 ];
 
-const POOL_BPS = 4000n;  // 40% to pool
 const BPS = 10_000n;
 const BYTES32_HEX_PATTERN = /^0x[0-9a-fA-F]{64}$/;
 
@@ -57,13 +57,30 @@ interface SplitTargets {
   pool: string;
 }
 
+/** On-chain payment mode enum values */
+const PAYMENT_MODE = {
+  PROXY_WRAPPED: 0,
+  NATIVE_X402: 1,
+} as const;
+
+type PaymentModeType = "PROXY_WRAPPED" | "NATIVE_X402";
+
+/** Agent-level funding configuration from IdentityRegistry */
+interface AgentFundingConfig {
+  needsFunding: boolean;
+  splitRatio: number; // basis points (0-10000)
+}
+
 interface ServiceInfo {
   owner: string;
+  agentId: bigint;
+  paymentMode: PaymentModeType;
+  fundingConfig: AgentFundingConfig;
   splitTargets: SplitTargets | null;
 }
 
 /**
- * Resolve on-chain service info: owner + split targets (agentWallet, pool).
+ * Resolve on-chain service info: owner + paymentMode + agent funding config + split targets.
  * Only works for on-chain services (bytes32 hex: 0x + 64 hex chars).
  * Returns null on failure so callers can fall back to resource.creatorAddress.
  * splitTargets is null if the agent has no wallet or pool (graceful fallback).
@@ -84,15 +101,21 @@ async function resolveServiceInfo(serviceId: string): Promise<ServiceInfo | null
     const service = await registry.getService(serviceId);
     const owner = service.owner as string;
     const agentId = service.agentId as bigint;
+    const paymentModeNum = Number(service.paymentMode);
+    const paymentMode: PaymentModeType = paymentModeNum === PAYMENT_MODE.NATIVE_X402
+      ? "NATIVE_X402"
+      : "PROXY_WRAPPED";
 
     if (!owner || owner === ethers.ZeroAddress) {
       return null;
     }
 
-    console.log(`[x402Gate] Resolved on-chain owner for ${serviceId}: ${owner}, agentId=${agentId}`);
+    console.log(`[x402Gate] Resolved on-chain owner for ${serviceId}: ${owner}, agentId=${agentId}, paymentMode=${paymentMode}`);
 
-    // Try to resolve split targets (agentWallet + pool)
+    // Fetch agent funding config + split targets
+    let fundingConfig: AgentFundingConfig = { needsFunding: false, splitRatio: 0 };
     let splitTargets: SplitTargets | null = null;
+
     try {
       const identityRegistry = new ethers.Contract(
         config.identityRegistryAddress,
@@ -105,10 +128,14 @@ async function resolveServiceInfo(serviceId: string): Promise<ServiceInfo | null
         provider
       );
 
-      const [agentWallet, pool] = await Promise.all([
+      const [[needsFunding, splitRatio], agentWallet, pool] = await Promise.all([
+        agentFactory.getFundingConfig(agentId) as Promise<[boolean, number]>,
         identityRegistry.getAgentWallet(agentId) as Promise<string>,
         agentFactory.poolByAgentId(agentId) as Promise<string>,
       ]);
+
+      fundingConfig = { needsFunding, splitRatio: Number(splitRatio) };
+      console.log(`[x402Gate] Agent ${agentId} funding config: needsFunding=${needsFunding}, splitRatio=${splitRatio}`);
 
       if (
         agentWallet && agentWallet !== ethers.ZeroAddress &&
@@ -121,10 +148,10 @@ async function resolveServiceInfo(serviceId: string): Promise<ServiceInfo | null
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`[x402Gate] Failed to resolve split targets for agentId=${agentId}: ${message}`);
+      console.warn(`[x402Gate] Failed to resolve agent config for agentId=${agentId}: ${message}`);
     }
 
-    return { owner, splitTargets };
+    return { owner, agentId, paymentMode, fundingConfig, splitTargets };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn(`[x402Gate] Failed to resolve service info for ${serviceId}: ${message}`);
@@ -190,14 +217,15 @@ async function getDeployerSigner(): Promise<ethers.Wallet> {
 }
 
 /**
- * Fire-and-forget: split USDC 40/60 (pool/agentWallet) and record usage.
- * Called after x402 settlement when the service has split targets.
+ * Fire-and-forget: split USDC based on agent's configured splitRatio and record usage.
+ * Called after x402 settlement when the agent needs funding and has split targets.
  * USDC arrives at proxy signer via x402, then gets distributed.
  */
 function fireSplitAndRecordUsage(
   serviceId: string,
   totalAmount: string,
-  targets: SplitTargets
+  targets: SplitTargets,
+  splitRatio: number // basis points (e.g., 4000 = 40% to pool)
 ): void {
   if (!config.proxySignerKey) {
     console.warn("[x402Gate] No PROXY_SIGNER_KEY configured, skipping split");
@@ -205,8 +233,10 @@ function fireSplitAndRecordUsage(
   }
 
   const total = BigInt(totalAmount);
-  const poolAmount = (total * POOL_BPS) / BPS;
+  const poolAmount = (total * BigInt(splitRatio)) / BPS;
   const walletAmount = total - poolAmount;
+  const poolPct = (splitRatio / 100).toFixed(0);
+  const walletPct = ((10000 - splitRatio) / 100).toFixed(0);
 
   (async () => {
     try {
@@ -215,17 +245,21 @@ function fireSplitAndRecordUsage(
       const usdc = new ethers.Contract(config.usdcAddress, ERC20_TRANSFER_ABI, signer);
       const registry = new ethers.Contract(config.serviceRegistryAddress, SERVICE_REGISTRY_ABI, signer);
 
-      // 1. Transfer 40% to pool
-      const nonce1 = allocateNonce();
-      const tx1 = await usdc.transfer(targets.pool, poolAmount, { nonce: nonce1 });
-      console.log(`[x402Gate] Split 40% to pool ${targets.pool}: tx=${tx1.hash}`);
-      await tx1.wait();
+      // 1. Transfer pool share
+      if (poolAmount > 0n) {
+        const nonce1 = allocateNonce();
+        const tx1 = await usdc.transfer(targets.pool, poolAmount, { nonce: nonce1 });
+        console.log(`[x402Gate] Split ${poolPct}% to pool ${targets.pool}: tx=${tx1.hash}`);
+        await tx1.wait();
+      }
 
-      // 2. Transfer 60% to agent wallet
-      const nonce2 = allocateNonce();
-      const tx2 = await usdc.transfer(targets.agentWallet, walletAmount, { nonce: nonce2 });
-      console.log(`[x402Gate] Split 60% to wallet ${targets.agentWallet}: tx=${tx2.hash}`);
-      await tx2.wait();
+      // 2. Transfer wallet share
+      if (walletAmount > 0n) {
+        const nonce2 = allocateNonce();
+        const tx2 = await usdc.transfer(targets.agentWallet, walletAmount, { nonce: nonce2 });
+        console.log(`[x402Gate] Split ${walletPct}% to wallet ${targets.agentWallet}: tx=${tx2.hash}`);
+        await tx2.wait();
+      }
 
       // 3. Record usage on-chain
       const nonce3 = allocateNonce();
@@ -233,7 +267,7 @@ function fireSplitAndRecordUsage(
       console.log(`[x402Gate] recordUsage tx sent: ${tx3.hash}`);
       await tx3.wait();
 
-      console.log(`[x402Gate] Split complete: pool=${poolAmount}, wallet=${walletAmount}, serviceId=${serviceId}`);
+      console.log(`[x402Gate] Split complete: pool=${poolAmount} (${poolPct}%), wallet=${walletAmount} (${walletPct}%), serviceId=${serviceId}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[x402Gate] fireSplitAndRecordUsage failed: ${message} (USDC stays at proxy signer)`);
@@ -279,29 +313,33 @@ function fireRecordUsage(serviceId: string, calls: number, amount: string): void
 }
 
 /**
- * Build the standard x402 PaymentRequirementsAccept block for a resource.
+ * Build the x402 v2 payment requirements (accepted + resource objects).
  */
-function buildAccept(
+function buildPaymentRequirements(
   resource: { name: string; creatorAddress: string; pricing: { pricePerCall: string } },
   requestUrl: string,
   payToOverride?: string
-): PaymentRequirementsAccept {
-  // x402-axios requires `resource` to be a full URL
+): { accepted: PaymentRequirementsAccept; resource: { url: string; description: string; mimeType: string } } {
+  // Build full URL for resource
   const fullUrl = requestUrl.startsWith("http")
     ? requestUrl
     : `http://localhost:${config.port}${requestUrl}`;
 
   return {
-    scheme: "exact",
-    network: "base-sepolia",
-    maxAmountRequired: resource.pricing.pricePerCall,
-    resource: fullUrl,
-    description: resource.name,
-    mimeType: "application/json",
-    payTo: payToOverride ?? resource.creatorAddress,
-    maxTimeoutSeconds: 60,
-    asset: config.usdcAddress,
-    extra: { name: "USDC", version: "2" },
+    accepted: {
+      scheme: "exact",
+      network: config.x402Network,
+      amount: resource.pricing.pricePerCall,
+      payTo: payToOverride ?? resource.creatorAddress,
+      maxTimeoutSeconds: 60,
+      asset: config.usdcAddress,
+      extra: { name: "USDC", version: "2" },
+    },
+    resource: {
+      url: fullUrl,
+      description: resource.name,
+      mimeType: "application/json",
+    },
   };
 }
 
@@ -341,19 +379,113 @@ export function createX402Gate(): RequestHandler {
     // Resolve on-chain service info (owner + split targets)
     const serviceInfo = await resolveServiceInfo(resourceId);
 
-    // Payment routing logic:
-    // 1. If split targets exist AND proxy signer is configured → route to proxy signer (will split 40/60)
-    // 2. Otherwise, if on-chain owner exists → pay owner directly
-    // 3. Otherwise → pay resource.creatorAddress (off-chain fallback in buildAccept)
+    // Payment routing logic based on agent's needsFunding config:
+    // needsFunding=true + has split targets → route to proxy signer for split
+    // needsFunding=false or no split targets → pay owner directly
+    // Fallback: pay resource.creatorAddress (off-chain resources)
     let payTo: string | undefined;
-    if (serviceInfo?.splitTargets && config.proxySignerKey) {
+    if (
+      serviceInfo?.fundingConfig?.needsFunding &&
+      serviceInfo?.fundingConfig?.splitRatio > 0 &&
+      serviceInfo?.splitTargets &&
+      config.proxySignerKey
+    ) {
+      // Agent needs funding with valid split targets → route to proxy for split
       payTo = computeProxySignerAddress();
     } else if (serviceInfo?.owner) {
+      // Self-funded or no split targets → pay owner directly
       payTo = serviceInfo.owner;
     } else {
-      payTo = undefined; // Will use resource.creatorAddress in buildAccept
+      payTo = undefined; // Will use resource.creatorAddress in buildPaymentRequirements
     }
-    const accept = buildAccept(resource, req.originalUrl, payTo);
+    const paymentReqs = buildPaymentRequirements(resource, req.originalUrl, payTo);
+
+    // Store serviceInfo for post-payment handling
+    (req as Request & { serviceInfo?: ServiceInfo | null }).serviceInfo = serviceInfo;
+
+    // ------------------------------------------------------------------
+    // Path A: PAYMENT-SIGNATURE header (x402 v2 facilitator flow)
+    // ------------------------------------------------------------------
+    const paymentSignature = req.headers["payment-signature"] as string | undefined;
+    if (paymentSignature) {
+      try {
+        // Decode PAYMENT-SIGNATURE (base64 or raw JSON)
+        let paymentData: unknown;
+        try {
+          const decoded = Buffer.from(paymentSignature, "base64").toString("utf-8");
+          paymentData = JSON.parse(decoded);
+        } catch {
+          try {
+            paymentData = JSON.parse(paymentSignature);
+          } catch {
+            res.status(400).json({ error: "Invalid PAYMENT-SIGNATURE format" });
+            return;
+          }
+        }
+
+        // Forward to Monad facilitator for settlement
+        const facilitatorUrl = "https://x402-facilitator.molandak.org";
+        const settleResponse = await fetch(`${facilitatorUrl}/settle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(paymentData),
+        });
+
+        const responseText = await settleResponse.text();
+        let settleResult: {
+          success?: boolean;
+          errorReason?: string;
+          error?: string;
+          transaction?: string;
+        };
+
+        try {
+          settleResult = JSON.parse(responseText);
+        } catch {
+          res.status(502).json({ error: "Facilitator error", details: responseText.slice(0, 200) });
+          return;
+        }
+
+        if (!settleResult.success) {
+          res.status(402).json({
+            error: "Payment settlement failed",
+            details: settleResult.errorReason || settleResult.error,
+          });
+          return;
+        }
+
+        // Payment verified and settled, record usage
+        const storedServiceInfo = (req as Request & { serviceInfo?: ServiceInfo | null }).serviceInfo;
+        if (
+          storedServiceInfo?.fundingConfig?.needsFunding &&
+          storedServiceInfo?.fundingConfig?.splitRatio > 0 &&
+          storedServiceInfo?.splitTargets
+        ) {
+          fireSplitAndRecordUsage(
+            resourceId,
+            paymentReqs.accepted.amount,
+            storedServiceInfo.splitTargets,
+            storedServiceInfo.fundingConfig.splitRatio
+          );
+        } else {
+          fireRecordUsage(resourceId, 1, paymentReqs.accepted.amount);
+        }
+
+        // Set payment response header
+        res.setHeader("PAYMENT-RESPONSE", Buffer.from(JSON.stringify({
+          success: true,
+          transaction: settleResult.transaction,
+        })).toString("base64"));
+
+        next();
+        return;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Payment verification error";
+        console.error(`[x402Gate] Path A (facilitator) error: ${message}`);
+        res.status(500).json({ error: message });
+        return;
+      }
+    }
 
     // ------------------------------------------------------------------
     // Path B: x-payment-id header (on-chain gateway for agents)
@@ -414,6 +546,10 @@ export function createX402Gate(): RequestHandler {
         });
         recordTransaction(tx);
 
+        // Path B: x402Gateway already handles splitting at the contract level.
+        // We only need to record usage stats (no proxy-side split needed).
+        fireRecordUsage(resourceId, 1, amount.toString());
+
         next();
         return;
       } catch (err: unknown) {
@@ -426,14 +562,12 @@ export function createX402Gate(): RequestHandler {
     }
 
     // ------------------------------------------------------------------
-    // No payment header → respond 402 with requirements
+    // No payment header → respond 402 with requirements (x402 v2 format)
     // ------------------------------------------------------------------
     const errorBody: X402ErrorResponse = {
-      x402Version: 1,
-      error: "Payment required",
-      accepts: [accept],
-      gatewayContract: config.gatewayAddress,
-      serviceId: resourceId,
+      x402Version: 2,
+      accepts: [paymentReqs.accepted],
+      resource: paymentReqs.resource,
     };
 
     res.setHeader(

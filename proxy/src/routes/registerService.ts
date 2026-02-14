@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { JsonRpcProvider, Contract } from "ethers";
 import { config } from "../config.js";
-import { registerResource } from "../services/resourceStore.js";
+import { registerResource, getResource } from "../services/resourceStore.js";
 import type { ServiceType } from "../types/x402.js";
 
 // ---------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import type { ServiceType } from "../types/x402.js";
 // ---------------------------------------------------------------------------
 
 const SERVICE_REGISTRY_ABI = [
-  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, bool active, uint256 totalCalls, uint256 totalRevenue))",
+  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, uint8 paymentMode, bool active, uint256 totalCalls, uint256 totalRevenue))",
 ];
 
 const SERVICE_TYPE_NAMES: Record<number, ServiceType> = {
@@ -38,6 +38,11 @@ export const registerServiceRouter = Router();
 interface RegisterServiceBody {
   serviceId?: string;
   originalUrl?: string;
+  paymentMode?: "PROXY_WRAPPED" | "NATIVE_X402";
+  schema?: {
+    input: object | null;
+    output: object | null;
+  };
 }
 
 registerServiceRouter.post("/", async (req: Request, res: Response) => {
@@ -69,6 +74,7 @@ registerServiceRouter.post("/", async (req: Request, res: Response) => {
       pricePerCall: bigint;
       endpoint: string;
       serviceType: number;
+      paymentMode: number;
       active: boolean;
     };
 
@@ -88,12 +94,12 @@ registerServiceRouter.post("/", async (req: Request, res: Response) => {
     const typeId = Number(service.serviceType);
     const serviceType: ServiceType = SERVICE_TYPE_NAMES[typeId] ?? "OTHER";
 
-    // Generate a short resource ID from the serviceId
-    const shortId = serviceId.slice(0, 18);
+    // Extract schema from request body if provided
+    const schema = body.schema;
 
-    // Register in proxy resource store
+    // Register in proxy resource store using full bytes32 serviceId
     const resource = registerResource({
-      id: shortId,
+      id: serviceId,
       name: service.name,
       type: serviceType,
       creatorAddress: service.owner,
@@ -102,6 +108,7 @@ registerServiceRouter.post("/", async (req: Request, res: Response) => {
         pricePerCall: service.pricePerCall.toString(),
         currency: "USDC",
       },
+      schema: schema ?? undefined,
     });
 
     console.log(
@@ -120,4 +127,25 @@ registerServiceRouter.post("/", async (req: Request, res: Response) => {
     console.error("[register-service] Error:", message);
     res.status(500).json({ error: "Service registration failed", details: message });
   }
+});
+
+// ---------------------------------------------------------------------------
+// GET /register-service/:serviceId/schema
+//
+// Returns the input/output schema for a service if defined.
+// ---------------------------------------------------------------------------
+
+registerServiceRouter.get("/:serviceId/schema", (req: Request, res: Response) => {
+  const { serviceId } = req.params;
+  const resource = getResource(serviceId);
+
+  if (!resource) {
+    res.status(404).json({ error: "Service not found" });
+    return;
+  }
+
+  res.json({
+    serviceId,
+    schema: resource.schema ?? { input: null, output: null },
+  });
 });

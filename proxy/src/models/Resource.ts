@@ -1,4 +1,4 @@
-import type { Resource, ServiceType, ResourcePricing } from "../types/x402.js";
+import type { Resource, ServiceType, ResourcePricing, ResourceSchema } from "../types/x402.js";
 
 /**
  * Helper to create a Resource object with a generated proxy URL.
@@ -12,6 +12,7 @@ export function createResource(params: {
   pricing: ResourcePricing;
   apiKey?: string;
   apiKeyHeader?: string;
+  schema?: ResourceSchema;
 }): Resource {
   return {
     id: params.id,
@@ -23,6 +24,7 @@ export function createResource(params: {
     pricing: params.pricing,
     apiKey: params.apiKey,
     apiKeyHeader: params.apiKeyHeader,
+    schema: params.schema,
   };
 }
 

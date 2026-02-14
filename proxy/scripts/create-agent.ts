@@ -79,7 +79,8 @@ async function main() {
   console.log("agentId:", agentId);
 
   // Phase 2: Setup smart account
-  await new Promise((r) => setTimeout(r, 3000));
+  // Wait for register tx to be confirmed and indexed
+  await new Promise((r) => setTimeout(r, 5000));
   const setupRes = await fetch(`${RELAYER_URL}/register-agent/setup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -131,7 +132,8 @@ async function main() {
   console.log("setAgentWallet: done");
 
   // Phase 3: Finalize (create pool)
-  await new Promise((r) => setTimeout(r, 3000));
+  // Wait for setAgentWallet tx to be confirmed and indexed
+  await new Promise((r) => setTimeout(r, 8000));
   const finalRes = await fetch(`${RELAYER_URL}/register-agent/finalize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

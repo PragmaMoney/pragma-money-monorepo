@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Resource, ServiceType, ResourcePricing } from "../types/x402.js";
+import type { Resource, ServiceType, ResourcePricing, ResourceSchema } from "../types/x402.js";
 import { createResource } from "../models/Resource.js";
 
 /**
@@ -57,6 +57,7 @@ export function registerResource(params: {
   pricing: ResourcePricing;
   apiKey?: string;
   apiKeyHeader?: string;
+  schema?: ResourceSchema;
 }): Resource {
   const resource = createResource(params);
   store.set(resource.id, resource);

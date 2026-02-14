@@ -12,6 +12,11 @@ const IDENTITY_REGISTRY_ABI = [
   "function getAgentWallet(uint256 agentId) view returns (address)",
 ];
 
+const AGENT_FACTORY_ABI = [
+  "function setFundingConfig(uint256 agentId, bool needsFunding, uint16 splitRatio) external",
+  "function getFundingConfig(uint256 agentId) view returns (bool needsFunding, uint16 splitRatio)",
+];
+
 const AGENT_ACCOUNT_FACTORY_ABI = [
   "function createAccount(address owner, address operator, bytes32 agentId, uint256 dailyLimit, uint256 expiresAt) returns (address)",
   "function getAddress(address owner, bytes32 agentId) view returns (address)",
@@ -295,12 +300,22 @@ registerAgentRouter.post("/setup", async (req: Request, res: Response) => {
 interface FinalizeBody {
   operatorAddress?: string;
   agentId?: string;
+  /** Whether agent needs investor funding (enables auto-split). Default: true */
+  needsFunding?: boolean;
+  /** Split ratio in basis points (e.g., 4000 = 40% to pool). Default: 4000 */
+  splitRatio?: number;
 }
 
 registerAgentRouter.post("/finalize", async (req: Request, res: Response) => {
   try {
     const body = req.body as FinalizeBody;
     const { operatorAddress, agentId } = body;
+    const needsFunding = body.needsFunding ?? true;  // default: needs funding
+    const splitRatio = body.splitRatio ?? 4000;      // default: 40%
+
+    // Initial delay to let previous transactions settle and nonces sync
+    console.log("[register-agent/finalize] Waiting 3s for blockchain state to settle...");
+    await new Promise((r) => setTimeout(r, 3000));
 
     // ---- Validation ----
     if (!operatorAddress || !ethers.isAddress(operatorAddress)) {
@@ -371,7 +386,9 @@ registerAgentRouter.post("/finalize", async (req: Request, res: Response) => {
 
     await syncDeployerNonce(provider, deployerAddress);
 
-    // ---- Step 1: Create agent pool ----
+    let poolAddress = "";
+
+    // ---- Step 1: Create agent pool (always created for all agents) ----
     const n1 = allocateNonce();
     console.log(`[register-agent/finalize] Creating agent pool for agentId=${agentId}... (nonce=${n1})`);
     const agentPoolFactory = new Contract(
@@ -406,7 +423,6 @@ registerAgentRouter.post("/finalize", async (req: Request, res: Response) => {
       (l: { topics: readonly string[] }) => l.topics[0] === agentPoolCreatedTopic,
     );
 
-    let poolAddress = "";
     if (poolLog && "data" in poolLog) {
       const data = (poolLog as { data: string }).data;
       poolAddress = ethers.getAddress("0x" + data.slice(26, 66));
@@ -414,6 +430,10 @@ registerAgentRouter.post("/finalize", async (req: Request, res: Response) => {
 
     // ---- Step 2: Allow pool as target on smart account ----
     if (poolAddress) {
+      // Brief delay to let pool creation tx propagate
+      await new Promise((r) => setTimeout(r, 2000));
+      await syncDeployerNonce(provider, deployerAddress);
+
       const n2 = allocateNonce();
       console.log(`[register-agent/finalize] Allowing pool ${poolAddress} as target... (nonce=${n2})`);
       const smartAccount = new Contract(
@@ -423,14 +443,40 @@ registerAgentRouter.post("/finalize", async (req: Request, res: Response) => {
       );
       const allowPoolTx = await smartAccount.setTargetAllowed(poolAddress, true, { nonce: n2 });
       await allowPoolTx.wait();
+      txHashes.allowPool = allowPoolTx.hash;
     }
 
-    // ---- Step 3: Fund smart account with ETH for self-pay UserOps ----
-    // Note: AgentFactory.createAgentPool already registered the smart account as a reporter
-    const fundAmount = ethers.parseEther(config.fundAmountEoa);
+    // ---- Step 3: Set funding config on AgentFactory ----
+    // Brief delay between transactions
+    await new Promise((r) => setTimeout(r, 2000));
+    await syncDeployerNonce(provider, deployerAddress);
+
     const n3 = allocateNonce();
-    console.log(`[register-agent/finalize] Funding smart account ${smartAccountAddress} with ${config.fundAmountEoa} ETH... (nonce=${n3})`);
-    const fundSmartAccTx = await deployer.sendTransaction({ to: smartAccountAddress, value: fundAmount, nonce: n3 });
+    console.log(`[register-agent/finalize] Setting funding config: needsFunding=${needsFunding}, splitRatio=${splitRatio}... (nonce=${n3})`);
+    const agentFactoryWithSigner = new Contract(
+      config.agentPoolFactoryAddress,
+      AGENT_FACTORY_ABI,
+      deployer,
+    );
+    const setConfigTx = await agentFactoryWithSigner.setFundingConfig(
+      agentIdBigInt,
+      needsFunding,
+      splitRatio,
+      { nonce: n3 },
+    );
+    await setConfigTx.wait();
+    txHashes.setFundingConfig = setConfigTx.hash;
+
+    // ---- Step 4: Fund smart account with ETH for self-pay UserOps ----
+    // Note: AgentFactory.createAgentPool already registered the smart account as a reporter
+    // Brief delay between transactions
+    await new Promise((r) => setTimeout(r, 2000));
+    await syncDeployerNonce(provider, deployerAddress);
+
+    const fundAmount = ethers.parseEther(config.fundAmountEoa);
+    const n4 = allocateNonce();
+    console.log(`[register-agent/finalize] Funding smart account ${smartAccountAddress} with ${config.fundAmountEoa} ETH... (nonce=${n4})`);
+    const fundSmartAccTx = await deployer.sendTransaction({ to: smartAccountAddress, value: fundAmount, nonce: n4 });
     const fundSmartAccReceipt = await fundSmartAccTx.wait();
     txHashes.fundSmartAccount = fundSmartAccReceipt!.hash;
 
@@ -438,18 +484,126 @@ registerAgentRouter.post("/finalize", async (req: Request, res: Response) => {
     pendingRegistrations.delete(key);
 
     console.log(
-      `[register-agent/finalize] Done: agentId=${agentId}, pool=${poolAddress}`,
+      `[register-agent/finalize] Done: agentId=${agentId}, pool=${poolAddress}, needsFunding=${needsFunding}, splitRatio=${splitRatio}`,
     );
 
     res.json({
       agentId,
       smartAccountAddress,
       poolAddress,
+      needsFunding,
+      splitRatio,
       txHashes,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[register-agent/finalize] Error:", message);
     res.status(500).json({ error: "Finalize phase failed", details: message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Self-Funded Path: POST /self-funded — Returns instructions for self-funded agents
+// ---------------------------------------------------------------------------
+
+registerAgentRouter.post("/self-funded", async (_req: Request, res: Response) => {
+  // Returns instructions for agents who want to self-fund (needsFunding=false)
+  res.json({
+    success: true,
+    agentType: "self-funded",
+    instructions: {
+      step1: {
+        action: "Fund your EOA with MON",
+        details: "Ensure your EOA has at least 0.001 MON for gas fees",
+      },
+      step2: {
+        action: "Call IdentityRegistry.register()",
+        contract: config.identityRegistryAddress,
+        abi: "function register(string memory agentURI) external returns (uint256 agentId)",
+        details: "This mints an identity NFT to your EOA",
+      },
+      step3: {
+        action: "Set your agent wallet",
+        contract: config.identityRegistryAddress,
+        abi: "function setAgentWallet(uint256 agentId, address newWallet, uint256 deadline, bytes calldata signature) external",
+        details: "Set your EOA or SmartAccount as the agentWallet using EIP-712 signature",
+      },
+      step4: {
+        action: "Set funding config (self-funded)",
+        contract: config.agentPoolFactoryAddress,
+        abi: "function setFundingConfig(uint256 agentId, bool needsFunding, uint16 splitRatio) external",
+        details: "Call with needsFunding=false, splitRatio=0 for no auto-split",
+      },
+      step5: {
+        action: "(Optional) Create investor pool",
+        contract: config.agentPoolFactoryAddress,
+        abi: "function createAgentPool(uint256 agentId, address agentWallet, CreateParams calldata p) external returns (address pool)",
+        details: "Pool for token appreciation via contribute(), no auto-split",
+      },
+      step6: {
+        action: "Register your service",
+        contract: config.serviceRegistryAddress,
+        abi: "function registerService(bytes32 serviceId, uint256 agentId, string calldata name, uint256 pricePerCall, string calldata endpoint, ServiceType serviceType, PaymentMode paymentMode) external",
+        details: "Use PaymentMode.NATIVE_X402 (value: 1) for services that handle x402 natively",
+      },
+    },
+    contracts: {
+      identityRegistry: config.identityRegistryAddress,
+      serviceRegistry: config.serviceRegistryAddress,
+      agentPoolFactory: config.agentPoolFactoryAddress,
+      agentAccountFactory: config.agentAccountFactoryAddress,
+      x402Gateway: config.gatewayAddress,
+      usdc: config.usdcAddress,
+    },
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fund EOA Only: POST /fund-eoa — Just sends MON to EOA without full registration flow
+// ---------------------------------------------------------------------------
+
+interface FundEoaBody {
+  operatorAddress?: string;
+}
+
+registerAgentRouter.post("/fund-eoa", async (req: Request, res: Response) => {
+  try {
+    const body = req.body as FundEoaBody;
+    const { operatorAddress } = body;
+
+    // ---- Validation ----
+    if (!operatorAddress || !ethers.isAddress(operatorAddress)) {
+      res.status(400).json({ error: "operatorAddress is required and must be a valid Ethereum address" });
+      return;
+    }
+
+    // ---- Set up deployer signer ----
+    const provider = new JsonRpcProvider(config.gatewayRpcUrl);
+    const deployer = new Wallet(config.proxySignerKey, provider);
+    const deployerAddress = await deployer.getAddress();
+
+    await syncDeployerNonce(provider, deployerAddress);
+
+    // ---- Send ETH to agent EOA ----
+    const amount = ethers.parseEther(config.fundAmountEoa);
+    const nonce = allocateNonce();
+    console.log(`[register-agent/fund-eoa] Sending ${config.fundAmountEoa} MON to ${operatorAddress}... (nonce=${nonce})`);
+
+    const fundTx = await deployer.sendTransaction({ to: operatorAddress, value: amount, nonce });
+    const fundReceipt = await fundTx.wait();
+
+    console.log(`[register-agent/fund-eoa] Funded ${operatorAddress}, tx=${fundReceipt!.hash}`);
+
+    res.json({
+      success: true,
+      fundTxHash: fundReceipt!.hash,
+      amount: config.fundAmountEoa,
+      operatorAddress,
+      note: "EOA funded. You can now call IdentityRegistry.register() directly.",
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[register-agent/fund-eoa] Error:", message);
+    res.status(500).json({ error: "Fund EOA failed", details: message });
   }
 });

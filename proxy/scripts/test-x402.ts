@@ -34,10 +34,10 @@ const USDC_ABI = [
 ];
 
 const SERVICE_REGISTRY_ABI = [
-  "function registerService(bytes32 serviceId, uint256 agentId, string memory name, uint256 pricePerCall, string memory endpoint, uint8 serviceType) external",
-  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, bool active, uint256 totalCalls, uint256 totalRevenue) service)",
+  "function registerService(bytes32 serviceId, uint256 agentId, string memory name, uint256 pricePerCall, string memory endpoint, uint8 serviceType, uint8 fundingModel) external",
+  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, uint8 fundingModel, bool active, uint256 totalCalls, uint256 totalRevenue) service)",
   "function getServiceCount() view returns (uint256)",
-  "event ServiceRegistered(bytes32 indexed serviceId, uint256 indexed agentId, address indexed owner, string name, uint256 pricePerCall, uint8 serviceType)",
+  "event ServiceRegistered(bytes32 indexed serviceId, uint256 indexed agentId, address indexed owner, string name, uint256 pricePerCall, uint8 serviceType, uint8 fundingModel)",
 ];
 
 // ServiceType enum values (matches IServiceRegistry.ServiceType)
@@ -47,6 +47,12 @@ const ServiceType = {
   API: 2,
   AGENT: 3,
   OTHER: 4,
+} as const;
+
+// FundingModel enum values (matches IServiceRegistry.FundingModel)
+const FundingModel = {
+  PROXY_WRAPPED: 0,
+  NATIVE_X402: 1,
 } as const;
 
 const X402_GATEWAY_ABI = [
@@ -150,9 +156,10 @@ async function main() {
       pricePerCall: serviceResult[3],
       endpoint: serviceResult[4],
       serviceType: serviceResult[5],
-      active: serviceResult[6],
-      totalCalls: serviceResult[7],
-      totalRevenue: serviceResult[8],
+      fundingModel: serviceResult[6],
+      active: serviceResult[7],
+      totalCalls: serviceResult[8],
+      totalRevenue: serviceResult[9],
     } : serviceResult;
     
     console.log(`  ✓ Service exists: ${ethers.hexlify(serviceId)}`);
@@ -194,7 +201,8 @@ async function main() {
           serviceName,
           pricePerCall,
           endpoint,
-          serviceType
+          serviceType,
+          FundingModel.PROXY_WRAPPED
         );
         console.log(`  ⏳ Registration transaction: ${registerTx.hash}`);
         const registerReceipt = await registerTx.wait();
@@ -230,9 +238,10 @@ async function main() {
                 pricePerCall: serviceResult[3],
                 endpoint: serviceResult[4],
                 serviceType: serviceResult[5],
-                active: serviceResult[6],
-                totalCalls: serviceResult[7],
-                totalRevenue: serviceResult[8],
+                fundingModel: serviceResult[6],
+                active: serviceResult[7],
+                totalCalls: serviceResult[8],
+                totalRevenue: serviceResult[9],
               } : serviceResult;
               
               console.log(`  ✓ Service found:`);
@@ -265,9 +274,10 @@ async function main() {
             pricePerCall: serviceResult[3],
             endpoint: serviceResult[4],
             serviceType: serviceResult[5],
-            active: serviceResult[6],
-            totalCalls: serviceResult[7],
-            totalRevenue: serviceResult[8],
+            fundingModel: serviceResult[6],
+            active: serviceResult[7],
+            totalCalls: serviceResult[8],
+            totalRevenue: serviceResult[9],
           } : serviceResult;
           
           console.log(`  ✓ Service found:`);
