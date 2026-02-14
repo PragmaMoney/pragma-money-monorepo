@@ -1,0 +1,27 @@
+{
+  "name": "pragma-mcp-servers",
+  "version": "1.0.0",
+  "description": "PragmaMoney MCP service servers",
+  "private": true,
+  "workspaces": [
+    "templates/*",
+    "weather-api",
+    "image-generator"
+  ],
+  "scripts": {
+    "dev:native-x402": "npm run dev -w native-x402-template"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
