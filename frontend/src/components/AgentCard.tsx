@@ -14,6 +14,7 @@ interface AgentCardProps {
 export function AgentCard({ agent, onClick }: AgentCardProps) {
   const hasWallet = agent.walletAddress && agent.walletAddress !== "0x0000000000000000000000000000000000000000";
   const hasPool = agent.poolAddress && agent.poolAddress !== "0x0000000000000000000000000000000000000000";
+  // ENS lookups require mainnet
   const { data: ownerEnsName } = useEnsName({ address: agent.owner as `0x${string}`, chainId: 1 });
   const { data: ownerEnsAvatar } = useEnsAvatar({ name: ownerEnsName ?? undefined, chainId: 1 });
 

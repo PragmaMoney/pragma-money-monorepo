@@ -9,7 +9,7 @@ import { ServiceTester } from "@/components/ServiceTester";
 import { PaymentConfirm } from "@/components/PaymentConfirm";
 import { Service, PaymentInfo, SERVICE_TYPE_LABELS } from "@/types";
 import { formatUSDC } from "@/lib/utils";
-import { ChevronDown, Info, AlertCircle } from "lucide-react";
+import { ChevronDown, Info, AlertCircle, Code } from "lucide-react";
 import { useAccount } from "wagmi";
 
 function getProxyResourceId(service: Service): string {
@@ -61,6 +61,7 @@ function PlaygroundContent() {
     method: string;
     headers: Record<string, string>;
     body?: string;
+    customEndpoint?: string;
   } | null>(null);
 
   const [response, setResponse] = useState<{
@@ -81,11 +82,12 @@ function PlaygroundContent() {
   const handleExecute = async (
     method: string,
     headers: Record<string, string>,
-    body?: string
+    body?: string,
+    customEndpoint?: string
   ) => {
     if (!selectedService) return;
 
-    setPendingRequest({ method, headers, body });
+    setPendingRequest({ method, headers, body, customEndpoint });
     setShowPaymentModal(true);
   };
 
@@ -97,11 +99,17 @@ function PlaygroundContent() {
       setRequestError(null);
 
       const resourceId = getProxyResourceId(selectedService);
+      // Use custom endpoint if provided (for NATIVE_X402), otherwise use service endpoint
+      const effectiveEndpoint = pendingRequest.customEndpoint || selectedService.endpoint;
       const result = await makePayment(
         resourceId,
         pendingRequest.method as "GET" | "POST",
         pendingRequest.body ? JSON.parse(pendingRequest.body) : undefined,
-        { headers: pendingRequest.headers }
+        pendingRequest.headers,
+        {
+          fundingModel: selectedService.fundingModel,
+          endpoint: effectiveEndpoint,
+        }
       );
 
       setResponse({
@@ -144,7 +152,7 @@ function PlaygroundContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="font-display text-5xl font-bold text-lobster-dark mb-4">
+          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-lobster-dark mb-4">
             API Playground
           </h1>
           <p className="text-xl text-lobster-text max-w-3xl">
@@ -281,7 +289,7 @@ function PlaygroundContent() {
 
                   <div>
                     <p className="text-xs text-lobster-text mb-1">Price per Call</p>
-                    <p className="text-2xl font-display font-bold text-lobster-primary">
+                    <p className="text-xl sm:text-2xl font-display font-bold text-lobster-primary">
                       ${formatUSDC(selectedService.pricePerCall)}
                     </p>
                   </div>
@@ -298,21 +306,67 @@ function PlaygroundContent() {
                 </div>
               </div>
             )}
+
+            {/* Schema Info Panel */}
+            {selectedService?.schema && (selectedService.schema.input || selectedService.schema.output) && (
+              <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                <h3 className="font-display text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <Code className="w-5 h-5" />
+                  API Schema
+                </h3>
+
+                {/* Input Schema */}
+                {selectedService.schema.input && (
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold text-blue-700 mb-2">INPUT</p>
+                    <div className="bg-white/80 rounded-lg p-3 font-mono text-xs">
+                      {Object.entries((selectedService.schema.input as Record<string, unknown>).properties || {}).map(([key, prop]) => (
+                        <div key={key} className="flex items-start gap-2 mb-1 flex-wrap">
+                          <span className="text-blue-600">{key}</span>
+                          <span className="text-slate-400">:</span>
+                          <span className="text-slate-600">{(prop as { type?: string })?.type || "unknown"}</span>
+                          {(prop as { description?: string })?.description && (
+                            <span className="text-slate-400 text-[10px]">// {(prop as { description?: string }).description}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Output Info */}
+                {selectedService.schema.output && (
+                  <div>
+                    <p className="text-xs font-semibold text-blue-700 mb-2">OUTPUT</p>
+                    <div className="bg-white/80 rounded-lg p-3">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {selectedService.schema.outputContentType || "application/json"}
+                      </span>
+                      {(selectedService.schema.output as { description?: string })?.description && (
+                        <p className="text-xs text-slate-600 mt-2">
+                          {(selectedService.schema.output as { description?: string }).description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Panel - Service Tester */}
           <div className="lg:col-span-3">
             {!selectedService ? (
-              <div className="card text-center py-16">
-                <div className="w-24 h-24 bg-lobster-surface rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="material-icons text-5xl text-lobster-text">
+              <div className="card text-center py-8 sm:py-16">
+                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-lobster-surface rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <span className="material-icons text-3xl sm:text-5xl text-lobster-text">
                     play_circle
                   </span>
                 </div>
-                <h3 className="font-display text-2xl font-bold text-lobster-dark mb-3">
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-lobster-dark mb-2 sm:mb-3">
                   Select a Service
                 </h3>
-                <p className="text-lobster-text">
+                <p className="text-sm sm:text-base text-lobster-text">
                   Choose a service from the dropdown to start testing
                 </p>
               </div>

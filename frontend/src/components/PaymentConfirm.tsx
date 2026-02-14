@@ -129,7 +129,7 @@ export function PaymentConfirm({
               {/* Total Cost */}
               <div className="bg-gradient-lobster rounded-xl p-6 text-white">
                 <p className="text-sm opacity-90 mb-2">Total Cost</p>
-                <p className="font-display text-4xl font-bold">
+                <p className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold">
                   ${formatUSDC(paymentInfo.totalCost)}
                 </p>
                 <p className="text-sm opacity-75 mt-1">USDC</p>

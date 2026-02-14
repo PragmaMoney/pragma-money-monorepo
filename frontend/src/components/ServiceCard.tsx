@@ -14,6 +14,7 @@ interface ServiceCardProps {
 export function ServiceCard({ service, onClick }: ServiceCardProps) {
   const typeLabel = SERVICE_TYPE_LABELS[service.serviceType];
   const typeColor = SERVICE_TYPE_COLORS[service.serviceType];
+  // ENS lookups require mainnet
   const { data: ownerEnsName } = useEnsName({
     address: service.owner as `0x${string}`,
     chainId: 1,

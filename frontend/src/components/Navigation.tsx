@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 const navLinks = [
   { href: "/marketplace", label: "Marketplace" },
   { href: "/playground", label: "Playground" },
-  { href: "/dashboard", label: "Dashboard" },
   { href: "/register", label: "Register" },
   { href: "/simulation", label: "Simulation" },
   { href: "/score", label: "Score" },
@@ -23,12 +22,12 @@ export function Navigation() {
   return (
     <nav className="sticky top-0 z-[120] bg-black/95 border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-3">
+        <div className="flex justify-between items-center h-16 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="xl:hidden p-2 rounded-lg hover:bg-lobster-hover transition-colors duration-200"
+              className="xl:hidden p-2 rounded-lg hover:bg-lobster-hover transition-colors duration-200 flex-shrink-0"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -41,10 +40,11 @@ export function Navigation() {
             {/* Logo */}
             <Link
               href="/"
-              className="flex items-center space-x-2 text-2xl font-display font-bold text-white hover:text-pragma-primary transition-colors duration-200"
+              className="flex items-center space-x-2 text-xl sm:text-2xl font-display font-bold text-white hover:text-pragma-primary transition-colors duration-200"
             >
-              <span className="material-icons text-3xl">account_balance_wallet</span>
-              <span>PragmaMoney</span>
+              <span className="material-icons text-2xl sm:text-3xl">account_balance_wallet</span>
+              <span className="hidden sm:inline">PragmaMoney</span>
+              <span className="sm:hidden">Pragma</span>
             </Link>
           </div>
 

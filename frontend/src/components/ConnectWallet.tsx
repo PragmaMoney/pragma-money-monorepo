@@ -1,7 +1,6 @@
 "use client";
 
 import { useAccount, useConnect, useDisconnect, useEnsName, useEnsAvatar } from "wagmi";
-import { mainnet } from "wagmi/chains";
 import { useState, useRef, useEffect } from "react";
 import { Wallet, ChevronDown, LogOut } from "lucide-react";
 import { formatAddress } from "@/lib/utils";
@@ -9,13 +8,14 @@ import { BalanceDisplay } from "./BalanceDisplay";
 
 export function ConnectWallet() {
   const { address, isConnected } = useAccount();
+  // ENS lookups require mainnet
   const { data: ensName } = useEnsName({
     address,
-    chainId: mainnet.id,
+    chainId: 1,
   });
   const { data: ensAvatar } = useEnsAvatar({
     name: ensName ?? undefined,
-    chainId: mainnet.id,
+    chainId: 1,
   });
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
@@ -40,8 +40,9 @@ export function ConnectWallet() {
           onClick={() => setShowDropdown(!showDropdown)}
           className="btn-primary flex items-center space-x-2"
         >
-          <Wallet className="w-5 h-5" />
-          <span>Connect Wallet</span>
+          <Wallet className="w-5 h-5 flex-shrink-0" />
+          <span className="hidden sm:inline">Connect Wallet</span>
+          <span className="sm:hidden">Connect</span>
         </button>
 
         {showDropdown && (
@@ -71,10 +72,10 @@ export function ConnectWallet() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center space-x-3 px-4 py-2 bg-white border-2 border-[#E7E1EA] rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 text-[#1C1B1F]"
+        className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-4 py-2 bg-white border-2 border-[#E7E1EA] rounded-xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 text-[#1C1B1F] max-w-[180px] sm:max-w-none"
       >
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-lobster rounded-full flex items-center justify-center overflow-hidden">
+        <div className="flex items-center space-x-2 min-w-0">
+          <div className="w-8 h-8 bg-gradient-lobster rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
             {ensAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={ensAvatar} alt={ensName ?? "ENS Avatar"} className="w-full h-full object-cover" />
@@ -82,11 +83,11 @@ export function ConnectWallet() {
               <Wallet className="w-5 h-5 text-white" />
             )}
           </div>
-          <span className="font-medium text-[#1C1B1F]">
+          <span className="font-medium text-[#1C1B1F] truncate">
             {ensName ?? formatAddress(address || "")}
           </span>
         </div>
-        <ChevronDown className="w-4 h-4 text-[#5E5A6A]" />
+        <ChevronDown className="w-4 h-4 text-[#5E5A6A] flex-shrink-0" />
       </button>
 
       {showDropdown && (

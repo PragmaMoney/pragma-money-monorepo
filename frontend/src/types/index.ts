@@ -1,9 +1,16 @@
+import type { ContentType } from "./content";
+
 export enum ServiceType {
   COMPUTE = 0,
   STORAGE = 1,
   API = 2,
   AGENT = 3,
   OTHER = 4,
+}
+
+export enum FundingModel {
+  PROXY_WRAPPED = 0,
+  NATIVE_X402 = 1,
 }
 
 export interface Service {
@@ -13,11 +20,17 @@ export interface Service {
   pricePerCall: bigint;
   endpoint: string;
   serviceType: ServiceType;
+  fundingModel: FundingModel;
   active: boolean;
   totalCalls: bigint;
   totalRevenue: bigint;
   name?: string;
   description?: string;
+  schema?: {
+    input: Record<string, unknown> | null;
+    output: Record<string, unknown> | null;
+    outputContentType?: ContentType;
+  };
 }
 
 export interface SpendingPolicy {

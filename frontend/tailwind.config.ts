@@ -11,8 +11,8 @@ const config: Config = {
       colors: {
         "pragma-primary": "#FF4D4D", // Main Red
         "pragma-accent": "#FF5F57",  // Accent Red
-        "pragma-dark": "#0A0F1A",    // Base Background
-        "pragma-surface": "#141B2D", // Card Surface
+        "pragma-dark": "#111827",    // Base Background (slightly lighter than original #0A0F1A)
+        "pragma-surface": "#1E2433", // Card Surface
         "pragma-text": "#FFFFFF",    // Main Text
         "pragma-muted": "#8A93A6",   // Muted Text
         "pragma-border": "#2D3748",  // Border
@@ -21,8 +21,8 @@ const config: Config = {
         "lobster-primary": "#FF4D4D",
         "lobster-secondary": "#FF5F57",
         "lobster-accent": "#FF4D4D",
-        "lobster-bg": "#0A0F1A",
-        "lobster-surface": "#141B2D",
+        "lobster-bg": "#111827",
+        "lobster-surface": "#1E2433",
         "lobster-text": "#FFFFFF",
         "lobster-dark": "#FFFFFF",
         "lobster-border": "#2D3748",

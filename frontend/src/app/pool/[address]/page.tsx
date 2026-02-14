@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { type Address, formatUnits } from "viem";
 import { useAgentPool } from "@/hooks/useAgentPool";
+import { useServiceRegistry } from "@/hooks/useServiceRegistry";
+import { SERVICE_TYPE_LABELS, SERVICE_TYPE_COLORS } from "@/types";
 import { EarningsChart } from "@/components/EarningsChart";
 import { AGENT_POOL_ABI, ERC20_ABI, USDC_ADDRESS } from "@/lib/contracts";
 import {
@@ -18,6 +20,7 @@ import {
 import {
   ArrowLeft, Bot, Shield, DollarSign, TrendingUp, Clock,
   Wallet, ExternalLink, Loader2, CheckCircle, AlertCircle, Lock, Unlock,
+  Download, Copy, Layers, Play,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,12 +43,34 @@ export default function PoolPage({ params }: { params: { address: string } }) {
   const publicClient = usePublicClient();
   const { pool, userPosition, isLoading, error, refetch } = useAgentPool(poolAddress, userAddress);
   const { writeContractAsync } = useWriteContract();
+  const { services: allServices, isLoading: servicesLoading } = useServiceRegistry();
+
+  // Filter services by this agent's ID
+  const agentServices = pool ? allServices.filter(s => s.agentId === pool.agentId) : [];
 
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [pullAmount, setPullAmount] = useState("");
+  const [copiedCommand, setCopiedCommand] = useState(false);
   const [approveTx, setApproveTx] = useState<{ status: string; hash?: string; error?: string }>({ status: "idle" });
   const [depositTx, setDepositTx] = useState<{ status: string; hash?: string; error?: string }>({ status: "idle" });
   const [withdrawTx, setWithdrawTx] = useState<{ status: string; hash?: string; error?: string }>({ status: "idle" });
+  const [pullTx, setPullTx] = useState<{ status: string; hash?: string; error?: string }>({ status: "idle" });
+
+  // Check if connected user is the agent owner
+  const isOwner = pool && userAddress && pool.agentOwner.toLowerCase() === userAddress.toLowerCase();
+
+  // Generate CLI command for pulling
+  const getPullCommand = () => {
+    if (!pool || !pullAmount) return "";
+    return `npx pragma-agent pool pull --amount ${pullAmount} --pool ${poolAddress}`;
+  };
+
+  const copyPullCommand = () => {
+    navigator.clipboard.writeText(getPullCommand());
+    setCopiedCommand(true);
+    setTimeout(() => setCopiedCommand(false), 2000);
+  };
 
   const handleApprove = async () => {
     if (!depositAmount || !userAddress || !publicClient) return;
@@ -330,6 +355,69 @@ export default function PoolPage({ params }: { params: { address: string } }) {
               <EarningsChart />
             </div>
 
+            {/* Agent Services */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-5 h-5 text-lobster-primary" />
+                  <h2 className="font-display text-2xl font-semibold text-lobster-dark">Agent Services</h2>
+                </div>
+                <span className="text-sm text-lobster-text">{agentServices.length} service{agentServices.length !== 1 ? 's' : ''}</span>
+              </div>
+
+              {servicesLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="skeleton h-20 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : agentServices.length === 0 ? (
+                <div className="text-center py-8">
+                  <Layers className="w-12 h-12 text-lobster-text mx-auto mb-3 opacity-50" />
+                  <p className="text-lobster-text">No services registered yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {agentServices.map((service) => (
+                    <div
+                      key={service.id}
+                      className="bg-[#F7F5F9] border border-[#E7E1EA] rounded-xl p-4 hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lobster-dark truncate">
+                            {service.name || `Service ${service.id.slice(0, 10)}...`}
+                          </h3>
+                          <span className={cn("badge text-xs mt-1", SERVICE_TYPE_COLORS[service.serviceType])}>
+                            {SERVICE_TYPE_LABELS[service.serviceType]}
+                          </span>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="font-display font-bold text-lobster-primary">
+                            ${formatUSDC(service.pricePerCall)}
+                          </p>
+                          <p className="text-xs text-lobster-text">per call</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E7E1EA]">
+                        <div className="flex items-center space-x-4 text-xs text-lobster-text">
+                          <span>{service.totalCalls.toString()} calls</span>
+                          <span>${formatUSDC(service.totalRevenue)} earned</span>
+                        </div>
+                        <Link
+                          href={`/playground?service=${service.id}`}
+                          className="flex items-center space-x-1 text-xs text-lobster-primary hover:text-lobster-hover font-medium"
+                        >
+                          <Play className="w-3 h-3" />
+                          <span>Test</span>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Pool Details */}
             <div className="card">
               <div className="flex items-center space-x-2 mb-6">
@@ -460,6 +548,84 @@ export default function PoolPage({ params }: { params: { address: string } }) {
                 </div>
               )}
             </div>
+
+            {/* Owner Actions card - only show if connected user is the agent owner */}
+            {isOwner && (
+              <div className="card border-2 border-lobster-primary">
+                <div className="flex items-center space-x-2 mb-6">
+                  <Download className="w-5 h-5 text-lobster-primary" />
+                  <h2 className="font-display text-2xl font-semibold text-lobster-dark">Owner Actions</h2>
+                </div>
+
+                <div className="mb-4 p-3 bg-lobster-primary/10 rounded-lg">
+                  <p className="text-sm text-lobster-dark">
+                    You own this agent. You can pull USDC from the pool to your smart wallet via UserOp.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-lobster-text">Pull Amount (USDC)</label>
+                      <span className="text-xs text-lobster-text">
+                        Available: ${formatUSDC(pool.remainingCapToday)} today
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lobster-text font-medium">$</span>
+                      <input
+                        type="number"
+                        value={pullAmount}
+                        onChange={(e) => setPullAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="input-field pl-8"
+                        step="0.01"
+                        min="0"
+                        max={Number(formatUSDC(pool.remainingCapToday))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-[#F7F5F9] rounded-lg">
+                    <p className="text-xs text-lobster-text mb-2">Smart Wallet (receives USDC):</p>
+                    <Link
+                      href={getExplorerAddressUrl(pool.agentWallet)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-sm text-lobster-primary hover:text-lobster-hover font-mono"
+                    >
+                      <span>{formatAddress(pool.agentWallet)}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </div>
+
+                  {pullAmount && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-lobster-text">Run this command to pull via CLI:</p>
+                      <div className="relative">
+                        <pre className="p-3 bg-gray-900 text-green-400 text-xs rounded-lg overflow-x-auto">
+                          {getPullCommand()}
+                        </pre>
+                        <button
+                          onClick={copyPullCommand}
+                          className="absolute top-2 right-2 p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-white"
+                        >
+                          {copiedCommand ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-lobster-text">
+                    Note: Pull requires UserOp signing. Use the CLI or SDK to execute from your EOA.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Your Position card */}
             {userPosition && userPosition.shares > BigInt(0) && (

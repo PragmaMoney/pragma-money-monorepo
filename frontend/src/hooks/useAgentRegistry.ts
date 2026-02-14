@@ -33,28 +33,44 @@ export function useAgentRegistry() {
         functionName: "agentCount",
       });
 
-      const fetched: Agent[] = [];
+      if (count === BigInt(0)) {
+        setAgents([]);
+        setIsLoading(false);
+        return;
+      }
 
-      // 2. For each index, get agentId and details
-      for (let i = BigInt(0); i < count; i++) {
-        try {
-          const agentId = await publicClient.readContract({
+      // 2. Fetch all agent IDs in parallel
+      const indices = Array.from({ length: Number(count) }, (_, i) => BigInt(i));
+      const agentIds = await Promise.all(
+        indices.map((i) =>
+          publicClient.readContract({
             address: AGENT_POOL_FACTORY_ADDRESS,
             abi: AGENT_POOL_FACTORY_ABI,
             functionName: "getAgentIdAt",
             args: [i],
-          });
+          }).catch(() => null)
+        )
+      );
 
-          // 3. Read pool address
-          const poolAddress = await publicClient.readContract({
-            address: AGENT_POOL_FACTORY_ADDRESS,
-            abi: AGENT_POOL_FACTORY_ABI,
-            functionName: "poolByAgentId",
-            args: [agentId],
-          }) as Address;
+      // Filter out failed fetches
+      const validAgentIds = agentIds.filter((id): id is bigint => id !== null);
 
-          // 4. Read IdentityRegistry data
-          const [owner, walletAddress, agentURI] = await Promise.all([
+      if (validAgentIds.length === 0) {
+        setAgents([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Fetch agent data in parallel for each agent
+      const agentDataPromises = validAgentIds.map(async (agentId) => {
+        try {
+          const [poolAddress, owner, walletAddress, agentURI] = await Promise.all([
+            publicClient.readContract({
+              address: AGENT_POOL_FACTORY_ADDRESS,
+              abi: AGENT_POOL_FACTORY_ABI,
+              functionName: "poolByAgentId",
+              args: [agentId],
+            }) as Promise<Address>,
             publicClient.readContract({
               address: IDENTITY_REGISTRY_ADDRESS,
               abi: IDENTITY_REGISTRY_ABI,
@@ -75,7 +91,7 @@ export function useAgentRegistry() {
             }) as Promise<string>,
           ]);
 
-          // 5. Parse name from agentURI JSON
+          // Parse name from agentURI JSON
           let name = `Agent #${agentId}`;
           try {
             const parsed = JSON.parse(agentURI);
@@ -84,23 +100,26 @@ export function useAgentRegistry() {
             // agentURI is not valid JSON, use fallback name
           }
 
-          fetched.push({
+          return {
             agentId,
-            owner: owner as string,
-            walletAddress: walletAddress as string,
+            owner,
+            walletAddress,
             agentURI,
             name,
-            poolAddress: poolAddress as string,
-          });
+            poolAddress,
+          } as Agent;
         } catch {
-          // Skip agents that can't be read (e.g., burned)
-          continue;
+          // Skip agents that can't be read
+          return null;
         }
-      }
+      });
+
+      const agentResults = await Promise.all(agentDataPromises);
+      const fetched = agentResults.filter((a): a is Agent => a !== null);
 
       setAgents(fetched);
     } catch (err) {
-      console.error("Failed to fetch agents:", err);
+      console.error("[useAgentRegistry] Error:", err);
       setError(err instanceof Error ? err : new Error("Failed to fetch agents"));
     } finally {
       setIsLoading(false);

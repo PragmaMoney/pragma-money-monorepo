@@ -1,4 +1,4 @@
-import { Service, ServiceType, Transaction, SpendingPolicy, DailySpend } from "@/types";
+import { Service, ServiceType, FundingModel, Transaction, SpendingPolicy, DailySpend } from "@/types";
 
 export const mockServices: Service[] = [
   {
@@ -10,6 +10,7 @@ export const mockServices: Service[] = [
     pricePerCall: BigInt("1000000"), // 1 USDC (6 decimals)
     endpoint: "https://api.example.com/gpt4",
     serviceType: ServiceType.API,
+    fundingModel: FundingModel.PROXY_WRAPPED,
     active: true,
     totalCalls: BigInt("15420"),
     totalRevenue: BigInt("15420000000"),
@@ -23,6 +24,7 @@ export const mockServices: Service[] = [
     pricePerCall: BigInt("2500000"), // 2.5 USDC
     endpoint: "https://api.example.com/image-gen",
     serviceType: ServiceType.COMPUTE,
+    fundingModel: FundingModel.PROXY_WRAPPED,
     active: true,
     totalCalls: BigInt("8932"),
     totalRevenue: BigInt("22330000000"),
@@ -36,6 +38,7 @@ export const mockServices: Service[] = [
     pricePerCall: BigInt("500000"), // 0.5 USDC per GB
     endpoint: "https://storage.example.com",
     serviceType: ServiceType.STORAGE,
+    fundingModel: FundingModel.NATIVE_X402,
     active: true,
     totalCalls: BigInt("42156"),
     totalRevenue: BigInt("21078000000"),
@@ -49,6 +52,7 @@ export const mockServices: Service[] = [
     pricePerCall: BigInt("5000000"), // 5 USDC per execution
     endpoint: "https://agent.example.com/trade",
     serviceType: ServiceType.AGENT,
+    fundingModel: FundingModel.PROXY_WRAPPED,
     active: true,
     totalCalls: BigInt("3241"),
     totalRevenue: BigInt("16205000000"),
@@ -62,6 +66,7 @@ export const mockServices: Service[] = [
     pricePerCall: BigInt("750000"), // 0.75 USDC
     endpoint: "https://analytics.example.com",
     serviceType: ServiceType.API,
+    fundingModel: FundingModel.PROXY_WRAPPED,
     active: true,
     totalCalls: BigInt("28654"),
     totalRevenue: BigInt("21490500000"),
@@ -75,6 +80,7 @@ export const mockServices: Service[] = [
     pricePerCall: BigInt("100000"), // 0.1 USDC
     endpoint: "https://weather.example.com/mcp",
     serviceType: ServiceType.OTHER,
+    fundingModel: FundingModel.NATIVE_X402,
     active: true,
     totalCalls: BigInt("67823"),
     totalRevenue: BigInt("6782300000"),

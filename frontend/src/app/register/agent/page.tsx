@@ -34,6 +34,8 @@ interface AgentDetails {
   name: string;
   description: string;
   x402Support: boolean;
+  needsFunding: boolean;      // replaces fundingModel
+  splitRatio: number;         // basis points (e.g., 4000 = 40%)
 }
 
 interface WalletPolicy {
@@ -63,6 +65,8 @@ export default function RegisterAgentPage() {
     name: "",
     description: "",
     x402Support: true,
+    needsFunding: true,    // default: needs investor funding
+    splitRatio: 4000,      // default: 40% to pool
   });
 
   const [walletPolicy, setWalletPolicy] = useState<WalletPolicy>({
@@ -95,6 +99,7 @@ export default function RegisterAgentPage() {
   const { writeContractAsync: writeFactory } = useWriteContract();
   const { writeContractAsync: writeBindWallet } = useWriteContract();
   const { writeContractAsync: writePoolFactory } = useWriteContract();
+  const { writeContractAsync: writeAgentFactory } = useWriteContract();
   const { signTypedDataAsync } = useSignTypedData();
 
   // Update operator when wallet connects
@@ -335,6 +340,16 @@ export default function RegisterAgentPage() {
 
       await publicClient!.waitForTransactionReceipt({ hash });
 
+      // Set funding config on AgentFactory (needsFunding + splitRatio)
+      const fundingConfigHash = await writeAgentFactory({
+        address: AGENT_POOL_FACTORY_ADDRESS,
+        abi: AGENT_POOL_FACTORY_ABI,
+        functionName: "setFundingConfig",
+        args: [agentId, agentDetails.needsFunding, agentDetails.splitRatio],
+      });
+
+      await publicClient!.waitForTransactionReceipt({ hash: fundingConfigHash });
+
       setPoolTx({ status: "success", hash });
       setTimeout(() => setCurrentStep(5), 1000);
     } catch (err) {
@@ -556,6 +571,84 @@ export default function RegisterAgentPage() {
                     Enable automatic payment handling for API calls
                   </p>
                 </div>
+
+                {/* Funding Model */}
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-lobster-dark mb-3">
+                    Funding Model
+                  </label>
+
+                  <label className={cn(
+                    "flex items-start space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                    agentDetails.needsFunding
+                      ? "border-lobster-primary bg-lobster-primary/5"
+                      : "border-lobster-border hover:border-lobster-primary/50"
+                  )}>
+                    <input
+                      type="checkbox"
+                      checked={agentDetails.needsFunding}
+                      onChange={(e) => setAgentDetails({
+                        ...agentDetails,
+                        needsFunding: e.target.checked,
+                        splitRatio: e.target.checked ? 4000 : 0
+                      })}
+                      className="mt-1 w-5 h-5 text-lobster-primary rounded"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-lobster-dark">
+                        Seek Investor Funding
+                      </span>
+                      <p className="text-xs text-lobster-text mt-1">
+                        Enable auto-split: a percentage of ALL service revenue goes to your investor pool.
+                        Investors can deposit USDC to fund your agent's operations.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Split Ratio Slider - only show if needsFunding */}
+                  {agentDetails.needsFunding && (
+                    <div className="ml-8 p-4 bg-lobster-surface rounded-xl">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-medium text-lobster-dark">
+                          Revenue Split
+                        </label>
+                        <span className="text-sm font-semibold text-lobster-primary">
+                          {agentDetails.splitRatio / 100}% to Pool
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1000"
+                        max="9000"
+                        step="500"
+                        value={agentDetails.splitRatio}
+                        onChange={(e) => setAgentDetails({
+                          ...agentDetails,
+                          splitRatio: Number(e.target.value)
+                        })}
+                        className="w-full h-2 bg-lobster-border rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="flex justify-between text-xs text-lobster-text mt-2">
+                        <span>10% to pool</span>
+                        <span>90% to pool</span>
+                      </div>
+                      <p className="text-xs text-lobster-text mt-3 p-2 bg-white rounded-lg">
+                        {100 - agentDetails.splitRatio / 100}% goes directly to your wallet.
+                        Higher pool share attracts more investors.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Self-funded explanation */}
+                  {!agentDetails.needsFunding && (
+                    <div className="ml-8 p-4 bg-lobster-surface rounded-xl">
+                      <p className="text-xs text-lobster-text">
+                        <strong>Self-Funded Mode:</strong> 100% of service revenue goes to your wallet.
+                        You can still create a pool and voluntarily contribute() to share profits with investors.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end mt-8">
@@ -713,9 +806,12 @@ export default function RegisterAgentPage() {
           <div className="max-w-2xl mx-auto">
             <div className="card">
               <div>
-                <h2 className="font-display text-2xl font-semibold text-lobster-dark mb-2">Create Agent Pool</h2>
+                <h2 className="font-display text-2xl font-semibold text-lobster-dark mb-2">
+                  Create Agent Pool
+                </h2>
                 <p className="text-lobster-text text-sm">
                   Deploy an ERC-4626 funding pool for your agent. Investors can deposit USDC and your agent can pull funds daily.
+                  {agentDetails.needsFunding && ` ${agentDetails.splitRatio / 100}% of service revenue will auto-split to this pool.`}
                 </p>
               </div>
 
@@ -859,7 +955,7 @@ export default function RegisterAgentPage() {
                           #{agentId?.toString()}
                         </p>
                         <a
-                          href={getExplorerTokenUrl(IDENTITY_REGISTRY_ADDRESS, agentId)}
+                          href={getExplorerTokenUrl(IDENTITY_REGISTRY_ADDRESS, agentId?.toString() ?? "0")}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-lobster-primary hover:text-lobster-hover flex items-center space-x-1"
@@ -876,7 +972,7 @@ export default function RegisterAgentPage() {
                           {smartWalletAddress && formatAddress(smartWalletAddress)}
                         </p>
                         <a
-                          href={getExplorerAddressUrl(smartWalletAddress)}
+                          href={getExplorerAddressUrl(smartWalletAddress ?? "")}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm text-lobster-primary hover:text-lobster-hover flex items-center space-x-1"
@@ -910,6 +1006,14 @@ export default function RegisterAgentPage() {
                       <span className="text-sm text-lobster-text">Operator</span>
                       <span className="text-sm font-mono font-semibold text-lobster-dark">
                         {formatAddress(walletPolicy.operator)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-lobster-text">Funding Model</span>
+                      <span className="text-sm font-semibold text-lobster-dark">
+                        {agentDetails.needsFunding
+                          ? `Investor Funded (${agentDetails.splitRatio / 100}% to pool)`
+                          : "Self-Funded (100% to wallet)"}
                       </span>
                     </div>
                   </div>

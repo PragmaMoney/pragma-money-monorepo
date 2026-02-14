@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Service } from "@/types";
-import { Play, Plus, Trash2, Code } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Service, FundingModel } from "@/types";
+import { Play, Plus, Trash2, Code, Edit3, ChevronDown } from "lucide-react";
+import { ContentRenderer } from "./ContentRenderer";
 import { cn } from "@/lib/utils";
 
 interface ServiceTesterProps {
   service: Service;
-  onExecute: (method: string, headers: Record<string, string>, body?: string) => Promise<void>;
+  onExecute: (method: string, headers: Record<string, string>, body?: string, customEndpoint?: string) => Promise<void>;
   isLoading?: boolean;
   response?: {
     status: number;
@@ -37,6 +38,14 @@ export function ServiceTester({
     { id: "1", key: "Content-Type", value: "application/json" },
   ]);
   const [body, setBody] = useState("{\n  \n}");
+  const [customEndpoint, setCustomEndpoint] = useState(service.endpoint);
+  const [headersExpanded, setHeadersExpanded] = useState(false);
+  const isNativeX402 = service.fundingModel === FundingModel.NATIVE_X402;
+
+  // Reset custom endpoint when service changes
+  useEffect(() => {
+    setCustomEndpoint(service.endpoint);
+  }, [service.endpoint]);
 
   const handleAddHeader = () => {
     setHeaders([
@@ -63,7 +72,9 @@ export function ServiceTester({
       return acc;
     }, {} as Record<string, string>);
 
-    await onExecute(method, headersObj, method !== "GET" ? body : undefined);
+    // Pass custom endpoint for NATIVE_X402 services
+    const endpoint = isNativeX402 ? customEndpoint : undefined;
+    await onExecute(method, headersObj, method !== "GET" ? body : undefined, endpoint);
   };
 
   return (
@@ -79,7 +90,7 @@ export function ServiceTester({
           <label className="block text-sm font-medium text-lobster-text mb-2">
             HTTP Method
           </label>
-          <div className="flex space-x-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {(["GET", "POST", "PUT", "DELETE"] as HttpMethod[]).map((m) => (
               <button
                 key={m}
@@ -97,14 +108,37 @@ export function ServiceTester({
           </div>
         </div>
 
-        {/* Endpoint Display */}
+        {/* Endpoint Display/Edit */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-lobster-text mb-2">
-            Endpoint
-          </label>
-          <div className="bg-[#F7F5F9] border border-[#E7E1EA] px-4 py-3 rounded-xl font-mono text-sm text-[#1C1B1F] break-all overflow-hidden">
-            {service.endpoint}
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-lobster-text">
+              Endpoint
+            </label>
+            {isNativeX402 && (
+              <span className="text-xs text-lobster-primary flex items-center gap-1">
+                <Edit3 className="w-3 h-3" />
+                Editable (Native x402)
+              </span>
+            )}
           </div>
+          {isNativeX402 ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={customEndpoint}
+                onChange={(e) => setCustomEndpoint(e.target.value)}
+                className="w-full input-field font-mono text-sm"
+                placeholder="https://example.com/tools/your_tool"
+              />
+              <p className="text-xs text-lobster-text">
+                Add the full path for MCP tools (e.g., <code className="bg-gray-300 px-1 rounded">/tools/get_current_weather</code>)
+              </p>
+            </div>
+          ) : (
+            <div className="bg-[#F7F5F9] border border-[#E7E1EA] px-4 py-3 rounded-xl font-mono text-sm text-[#1C1B1F] break-all overflow-hidden">
+              {service.endpoint}
+            </div>
+          )}
         </div>
 
         {/* Headers */}
@@ -223,11 +257,23 @@ export function ServiceTester({
                 </div>
               </div>
 
-              {/* Response Headers */}
+              {/* Response Headers - collapsible on mobile */}
               {Object.keys(response.headers).length > 0 && (
                 <div>
-                  <p className="text-sm text-lobster-text mb-2">Response Headers</p>
-                  <div className="bg-slate-900 rounded-xl p-4 font-mono text-xs space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                  <button
+                    onClick={() => setHeadersExpanded(!headersExpanded)}
+                    className="flex items-center justify-between w-full text-sm text-lobster-text mb-2 sm:cursor-default"
+                  >
+                    <span>Response Headers ({Object.keys(response.headers).length})</span>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 sm:hidden transition-transform",
+                      headersExpanded && "rotate-180"
+                    )} />
+                  </button>
+                  <div className={cn(
+                    "bg-slate-900 rounded-xl p-4 font-mono text-xs space-y-1 max-h-40 overflow-y-auto custom-scrollbar",
+                    !headersExpanded && "hidden sm:block"
+                  )}>
                     {Object.entries(response.headers).map(([key, value]) => (
                       <div key={key} className="text-slate-100">
                         <span className="text-lobster-primary">{key}:</span> {value}
@@ -240,9 +286,7 @@ export function ServiceTester({
               {/* Response Body */}
               <div>
                 <p className="text-sm text-lobster-text mb-2">Response Body</p>
-                <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 font-mono text-xs overflow-x-auto custom-scrollbar max-h-96">
-                  {JSON.stringify(response.body, null, 2)}
-                </pre>
+                <ContentRenderer content={response.body} />
               </div>
             </div>
           ) : null}

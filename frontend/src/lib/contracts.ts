@@ -2,12 +2,12 @@ import { Address } from "viem";
 
 // Contract addresses on Monad Testnet (deployed)
 export const USDC_ADDRESS: Address = "0x534b2f3A21130d7a60830c2Df862319e593943A3";
-export const GATEWAY_ADDRESS: Address = "0x8887dD91C983b2c647a41DEce32c34E79c7C33df";
-export const SERVICE_REGISTRY_ADDRESS: Address = "0xCd5792dDdd3A7b98221223EFE5aCbC302a20A76e";
-export const AGENT_FACTORY_ADDRESS: Address = "0x84277eA30ec0a43ED362904308C0A72bF5269196";
+export const GATEWAY_ADDRESS: Address = "0x76f3a9aE46D58761f073a8686Eb60194B1917E27";
+export const SERVICE_REGISTRY_ADDRESS: Address = "0x7fc78b9769CF0739a5AC2a12D6BfCb121De12A59";
+export const AGENT_FACTORY_ADDRESS: Address = "0x77F3195CE8E69A76345dBfe5cdAa998a59dE99f5";
 
 // AgentFactory (Launchpad pool factory) — deployed by RedeployAll script
-export const AGENT_POOL_FACTORY_ADDRESS: Address = "0x2Cd3c8D045b29B1baC914722D85419964DBD79B7";
+export const AGENT_POOL_FACTORY_ADDRESS: Address = "0x42C7A12EA8AcD87367D1d52cb6a6ad6Ca306e9C0";
 
 export const AGENT_POOL_FACTORY_ABI = [
   {
@@ -55,12 +55,33 @@ export const AGENT_POOL_FACTORY_ABI = [
     outputs: [{ name: "pool", type: "address" }],
     stateMutability: "nonpayable",
   },
+  {
+    type: "function",
+    name: "setFundingConfig",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "needsFunding", type: "bool" },
+      { name: "splitRatio", type: "uint16" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "getFundingConfig",
+    inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [
+      { name: "needsFunding", type: "bool" },
+      { name: "splitRatio", type: "uint16" },
+    ],
+    stateMutability: "view",
+  },
 ] as const;
 
 export const IDENTITY_REGISTRY_ADDRESS: Address = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
 export const REPUTATION_REGISTRY_ADDRESS: Address = "0x8004B663056A597Dffe9eCcC1965A193B7388713";
-export const SCORE_ORACLE_ADDRESS: Address = "0xE36fa05D875B2475C671A8d5F47421365CE46874";
-export const REPUTATION_REPORTER_ADDRESS: Address = "0x2E3A2591561329ED54C88A84aD95E21e6192a907";
+export const SCORE_ORACLE_ADDRESS: Address = "0x3742386807D4D0584193695A33fC984154E84C47";
+export const REPUTATION_REPORTER_ADDRESS: Address = "0x8F10B8537907692d36E078f23525FAFF2756c5ab";
 
 // Minimal ABIs for contract interactions
 export const ERC20_ABI = [
@@ -116,6 +137,7 @@ export const SERVICE_REGISTRY_ABI = [
       { name: "pricePerCall", type: "uint256" },
       { name: "endpoint", type: "string" },
       { name: "serviceType", type: "uint8" },
+      { name: "fundingModel", type: "uint8" },
     ],
     name: "registerService",
     outputs: [],
@@ -134,6 +156,7 @@ export const SERVICE_REGISTRY_ABI = [
           { name: "pricePerCall", type: "uint256" },
           { name: "endpoint", type: "string" },
           { name: "serviceType", type: "uint8" },
+          { name: "fundingModel", type: "uint8" },
           { name: "active", type: "bool" },
           { name: "totalCalls", type: "uint256" },
           { name: "totalRevenue", type: "uint256" },
