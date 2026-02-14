@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 interface IIdentityRegistry {
+    event FundingConfigUpdated(uint256 indexed agentId, bool needsFunding, uint16 splitRatio);
+
     function register(string memory agentURI) external returns (uint256 agentId);
     function ownerOf(uint256 agentId) external view returns (address);
     function tokenURI(uint256 agentId) external view returns (string memory);
@@ -15,4 +17,6 @@ interface IIdentityRegistry {
     function setApprovalForAll(address operator, bool approved) external;
     function safeTransferFrom(address from, address to, uint256 tokenId) external;
     function isAuthorizedOrOwner(address spender, uint256 agentId) external view returns (bool);
+    function getFundingConfig(uint256 agentId) external view returns (bool needsFunding, uint16 splitRatio);
+    function setFundingConfig(uint256 agentId, bool needsFunding, uint16 splitRatio) external;
 }

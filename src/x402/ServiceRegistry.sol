@@ -106,9 +106,10 @@ contract ServiceRegistry is IServiceRegistry, Ownable {
         string calldata name,
         uint256 pricePerCall,
         string calldata endpoint,
-        ServiceType serviceType
+        ServiceType serviceType,
+        PaymentMode paymentMode
     ) external {
-        // Validate agent existence and pool
+        // Validate agent existence
         try identityRegistry.ownerOf(agentId) returns (address) {
             // ok
         } catch {
@@ -118,10 +119,8 @@ contract ServiceRegistry is IServiceRegistry, Ownable {
         if (agentWallet == address(0)) {
             revert AgentWalletNotSet(agentId);
         }
-        address pool = agentFactory.poolByAgentId(agentId);
-        if (pool == address(0)) {
-            revert AgentPoolNotFound(agentId);
-        }
+        // Pool is optional - agents without pools can still register services
+        // Split behavior is determined by agent's needsFunding config, not paymentMode
 
         address nftOwner = identityRegistry.ownerOf(agentId);
         if (msg.sender != nftOwner && msg.sender != agentWallet) {
@@ -148,6 +147,7 @@ contract ServiceRegistry is IServiceRegistry, Ownable {
             pricePerCall: pricePerCall,
             endpoint: endpoint,
             serviceType: serviceType,
+            paymentMode: paymentMode,
             active: true,
             totalCalls: 0,
             totalRevenue: 0
@@ -157,7 +157,7 @@ contract ServiceRegistry is IServiceRegistry, Ownable {
 
         _serviceIds.push(serviceId);
 
-        emit ServiceRegistered(serviceId, agentId, agentWallet, name, pricePerCall, serviceType);
+        emit ServiceRegistered(serviceId, agentId, agentWallet, name, pricePerCall, serviceType, paymentMode);
     }
 
     /// @inheritdoc IServiceRegistry

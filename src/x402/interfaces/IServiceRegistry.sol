@@ -12,6 +12,14 @@ interface IServiceRegistry {
         OTHER
     }
 
+    /// @notice Payment mode determines how service handles x402 payments
+    /// @dev PROXY_WRAPPED: Proxy wraps service with x402 layer, handles payments
+    /// @dev NATIVE_X402: Service implements x402 natively, handles own payments
+    enum PaymentMode {
+        PROXY_WRAPPED,
+        NATIVE_X402
+    }
+
     struct Service {
         uint256 agentId;
         address owner;
@@ -19,6 +27,7 @@ interface IServiceRegistry {
         uint256 pricePerCall;
         string endpoint;
         ServiceType serviceType;
+        PaymentMode paymentMode;
         bool active;
         uint256 totalCalls;
         uint256 totalRevenue;
@@ -30,7 +39,8 @@ interface IServiceRegistry {
         address indexed owner,
         string name,
         uint256 pricePerCall,
-        ServiceType serviceType
+        ServiceType serviceType,
+        PaymentMode paymentMode
     );
 
     event ServicePriceUpdated(
@@ -56,13 +66,15 @@ interface IServiceRegistry {
     /// @param pricePerCall Price in USDC (6 decimals) per API call
     /// @param endpoint The service endpoint URL
     /// @param serviceType The type of service
+    /// @param paymentMode How service handles x402 payments (PROXY_WRAPPED or NATIVE_X402)
     function registerService(
         bytes32 serviceId,
         uint256 agentId,
         string calldata name,
         uint256 pricePerCall,
         string calldata endpoint,
-        ServiceType serviceType
+        ServiceType serviceType,
+        PaymentMode paymentMode
     ) external;
 
     /// @notice Get service details

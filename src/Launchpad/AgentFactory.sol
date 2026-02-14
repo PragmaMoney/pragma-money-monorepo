@@ -14,6 +14,7 @@ import {IReputationReporter} from "../interfaces/IReputationReporter.sol";
 contract AgentFactory is Ownable, IERC721Receiver {
     event AgentRegistered(address indexed agentAccount, uint256 indexed agentId, string agentURI);
     event AgentPoolCreated(address indexed agentAccount, uint256 indexed agentId, address pool);
+    event FundingConfigUpdated(uint256 indexed agentId, bool needsFunding, uint16 splitRatio);
 
     IIdentityRegistry public immutable identityRegistry;
     address public scoreOracle;
@@ -22,6 +23,12 @@ contract AgentFactory is Ownable, IERC721Receiver {
 
     mapping(uint256 => address) public poolByAgentId;
     uint256[] private _allAgentIds;
+
+    /// @notice Agent funding configuration
+    /// @dev needsFunding: true = auto-split revenue, false = 100% to wallet
+    /// @dev splitRatio: basis points for pool share (e.g., 4000 = 40% to pool, 60% to wallet)
+    mapping(uint256 => bool) public agentNeedsFunding;
+    mapping(uint256 => uint16) public agentSplitRatio;
 
     struct CreateParams {
         string agentURI;
@@ -96,10 +103,11 @@ contract AgentFactory is Ownable, IERC721Receiver {
         if (address(p.asset) == address(0)) revert Errors.BadAsset();
         if (p.poolOwner == address(0)) revert Errors.BadPoolOwner();
 
-        // Ensure agentId exists and matches registered wallet.
+        // Ensure agentId exists and has a registered wallet.
+        // Pool can be created for any registered wallet (EOA or SmartAccount).
         identityRegistry.ownerOf(agentId);
         address registeredWallet = identityRegistry.getAgentWallet(agentId);
-        if (registeredWallet == address(0) || registeredWallet != agentAccount) revert Errors.BadWallet();
+        if (registeredWallet == address(0)) revert Errors.BadWallet();
 
         if (poolByAgentId[agentId] != address(0)) revert Errors.PoolExists();
         pool = address(new AgentPool(
@@ -133,5 +141,27 @@ contract AgentFactory is Ownable, IERC721Receiver {
 
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
+    }
+
+    /// @notice Set funding configuration for an agent
+    /// @param agentId The agent NFT token ID
+    /// @param needsFunding Whether the agent needs investor funding (enables auto-split)
+    /// @param splitRatio Split ratio in basis points (e.g., 4000 = 40% to pool, 60% to wallet)
+    function setFundingConfig(uint256 agentId, bool needsFunding, uint16 splitRatio)
+        external
+        onlyOwnerOrAdminOrAgentOwner(agentId)
+    {
+        if (splitRatio > 10000) revert Errors.InvalidRatio();
+        agentNeedsFunding[agentId] = needsFunding;
+        agentSplitRatio[agentId] = splitRatio;
+        emit FundingConfigUpdated(agentId, needsFunding, splitRatio);
+    }
+
+    /// @notice Get funding configuration for an agent
+    /// @param agentId The agent NFT token ID
+    /// @return needsFunding Whether the agent needs investor funding
+    /// @return splitRatio Split ratio in basis points
+    function getFundingConfig(uint256 agentId) external view returns (bool needsFunding, uint16 splitRatio) {
+        return (agentNeedsFunding[agentId], agentSplitRatio[agentId]);
     }
 }

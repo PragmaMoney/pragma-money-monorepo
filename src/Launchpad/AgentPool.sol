@@ -50,6 +50,7 @@ contract AgentPool is ERC4626, Ownable, ReentrancyGuard, Pausable {
     event VestingParamsUpdated(uint64 vestingDuration);
     event AllowedPullTargetUpdated(address indexed target, bool allowed);
     event AgentMetadataUpdated(string metadataURI);
+    event Contributed(address indexed contributor, uint256 assets);
 
     IIdentityRegistry public immutable identityRegistry;
     uint256 public immutable agentId;
@@ -271,6 +272,17 @@ contract AgentPool is ERC4626, Ownable, ReentrancyGuard, Pausable {
 
         IERC20(asset()).safeTransfer(to, assets);
         emit AgentPulled(dayIndex, to, assets, spentToday, dailyCap);
+    }
+
+    /// @notice Contribute assets to appreciate pool token value for investors.
+    /// @dev Anyone can call this to add assets without minting shares.
+    ///      This allows native x402 agents to share profits with investors voluntarily.
+    ///      Pool token value increases (more assets, same shares).
+    /// @param assets The amount of assets to contribute
+    function contribute(uint256 assets) external nonReentrant {
+        if (assets == 0) revert Errors.ZeroAmount();
+        IERC20(asset()).safeTransferFrom(msg.sender, address(this), assets);
+        emit Contributed(msg.sender, assets);
     }
 
     /*//////////////////////////////////////////////////////////////

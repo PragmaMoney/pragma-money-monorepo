@@ -30,9 +30,7 @@ contract x402Gateway is Ix402Gateway {
     /// @notice Agent factory for resolving agent pools
     IAgentFactory public immutable agentFactory;
 
-    /// @notice Fixed split in basis points (40% pool / 60% agent)
-    uint256 public constant POOL_BPS = 4000;
-    uint256 public constant AGENT_BPS = 6000;
+    /// @notice Basis points denominator for split calculations
     uint256 public constant BPS = 10_000;
 
     /// @notice Monotonically increasing nonce for payment ID generation
@@ -107,20 +105,28 @@ contract x402Gateway is Ix402Gateway {
             revert AgentWalletNotFound(agentId);
         }
 
-        address pool = agentFactory.poolByAgentId(agentId);
-        if (pool == address(0)) {
-            revert AgentPoolNotFound(agentId);
-        }
+        // Route payment based on agent-level funding config (stored in AgentFactory)
+        (bool needsFunding, uint16 splitRatio) = agentFactory.getFundingConfig(agentId);
 
-        uint256 poolShare = (total * POOL_BPS) / BPS;
-        uint256 agentShare = total - poolShare;
+        if (!needsFunding || splitRatio == 0) {
+            // Self-funded: 100% to agentWallet
+            usdc.safeTransferFrom(msg.sender, agentWallet, total);
+        } else {
+            // Needs funding: split based on agent's configured ratio
+            address pool = agentFactory.poolByAgentId(agentId);
+            if (pool == address(0)) {
+                revert AgentPoolNotFound(agentId);
+            }
 
-        // Transfer USDC from payer to pool + agent wallet (CEI: state written above, interaction below)
-        if (poolShare > 0) {
-            usdc.safeTransferFrom(msg.sender, pool, poolShare);
-        }
-        if (agentShare > 0) {
-            usdc.safeTransferFrom(msg.sender, agentWallet, agentShare);
+            uint256 poolShare = (total * splitRatio) / BPS;
+            uint256 agentShare = total - poolShare;
+
+            if (poolShare > 0) {
+                usdc.safeTransferFrom(msg.sender, pool, poolShare);
+            }
+            if (agentShare > 0) {
+                usdc.safeTransferFrom(msg.sender, agentWallet, agentShare);
+            }
         }
 
         // Record usage in the registry

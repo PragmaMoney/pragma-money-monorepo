@@ -24,6 +24,9 @@ contract IdentityRegistryUpgradeable is
         uint256 _lastId;
         // agentId => metadataKey => metadataValue (includes "agentWallet")
         mapping(uint256 => mapping(string => bytes)) _metadata;
+        // Agent funding configuration (v3)
+        mapping(uint256 => bool) agentNeedsFunding;
+        mapping(uint256 => uint16) agentSplitRatio; // basis points (e.g., 4000 = 40%)
     }
 
     // keccak256(abi.encode(uint256(keccak256("erc8004.identity.registry")) - 1)) & ~bytes32(uint256(0xff))
@@ -39,6 +42,7 @@ contract IdentityRegistryUpgradeable is
     event Registered(uint256 indexed agentId, string agentURI, address indexed owner);
     event MetadataSet(uint256 indexed agentId, string indexed indexedMetadataKey, string metadataKey, bytes metadataValue);
     event URIUpdated(uint256 indexed agentId, string newURI, address indexed updatedBy);
+    event FundingConfigUpdated(uint256 indexed agentId, bool needsFunding, uint16 splitRatio);
 
     bytes32 private constant AGENT_WALLET_SET_TYPEHASH =
         keccak256("AgentWalletSet(uint256 agentId,address newWallet,address owner,uint256 deadline)");
@@ -51,7 +55,7 @@ contract IdentityRegistryUpgradeable is
         _disableInitializers();
     }
 
-    function initialize() public reinitializer(2) {
+    function initialize() public reinitializer(3) {
         __Ownable_init(msg.sender);
         __ERC721_init("AgentIdentity", "AGENT");
         __ERC721URIStorage_init();
@@ -128,6 +132,42 @@ contract IdentityRegistryUpgradeable is
         IdentityRegistryStorage storage $ = _getIdentityRegistryStorage();
         bytes memory walletData = $._metadata[agentId]["agentWallet"];
         return address(bytes20(walletData));
+    }
+
+    /**
+     * @notice Set funding configuration for an agent
+     * @param agentId The agent NFT token ID
+     * @param needsFunding Whether the agent needs investor funding (enables auto-split)
+     * @param splitRatio Split ratio in basis points (e.g., 4000 = 40% to pool, 60% to wallet)
+     */
+    function setFundingConfig(uint256 agentId, bool needsFunding, uint16 splitRatio) external {
+        address agentOwner = _ownerOf(agentId);
+        IdentityRegistryStorage storage $ = _getIdentityRegistryStorage();
+        address agentWallet = address(bytes20($._metadata[agentId]["agentWallet"]));
+
+        require(
+            msg.sender == agentOwner ||
+            msg.sender == agentWallet ||
+            isApprovedForAll(agentOwner, msg.sender) ||
+            msg.sender == getApproved(agentId),
+            "Not authorized"
+        );
+        require(splitRatio <= 10000, "Invalid ratio");
+
+        $.agentNeedsFunding[agentId] = needsFunding;
+        $.agentSplitRatio[agentId] = splitRatio;
+        emit FundingConfigUpdated(agentId, needsFunding, splitRatio);
+    }
+
+    /**
+     * @notice Get funding configuration for an agent
+     * @param agentId The agent NFT token ID
+     * @return needsFunding Whether the agent needs investor funding
+     * @return splitRatio Split ratio in basis points
+     */
+    function getFundingConfig(uint256 agentId) external view returns (bool needsFunding, uint16 splitRatio) {
+        IdentityRegistryStorage storage $ = _getIdentityRegistryStorage();
+        return ($.agentNeedsFunding[agentId], $.agentSplitRatio[agentId]);
     }
 
     function setAgentWallet(
@@ -209,6 +249,6 @@ contract IdentityRegistryUpgradeable is
     }
 
     function getVersion() external pure returns (string memory) {
-        return "2.0.0";
+        return "3.0.0";
     }
 }

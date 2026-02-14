@@ -48,4 +48,6 @@ library Errors {
     error NoPools();
     error NoSummary();
     error BadTagArrayLength();
+    error ZeroAmount();
+    error InvalidRatio();
 }
