@@ -37,6 +37,10 @@ export interface JSONSchemaProperty {
   minimum?: number;
   maximum?: number;
   format?: string;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  items?: JSONSchema;
+  additionalProperties?: JSONSchemaProperty;
 }
 
 // MCP JSON-RPC types

@@ -18,7 +18,7 @@ export async function getCurrentWeather(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as GetCurrentArgs;
+  const input = applyDefaults(args, schema) as unknown as GetCurrentArgs;
 
   try {
     let weatherData: WeatherResult;

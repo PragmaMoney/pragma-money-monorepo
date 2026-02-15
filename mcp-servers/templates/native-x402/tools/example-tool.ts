@@ -13,7 +13,7 @@ interface ExampleToolInput {
 export const exampleTool: ToolHandler = async (
   args: Record<string, unknown>
 ): Promise<MCPContent[]> => {
-  const input = args as ExampleToolInput;
+  const input = args as unknown as ExampleToolInput;
 
   // Validate input
   if (!input.message || typeof input.message !== "string") {

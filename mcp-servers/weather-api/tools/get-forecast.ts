@@ -27,7 +27,7 @@ export async function getForecast(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as GetForecastArgs;
+  const input = applyDefaults(args, schema) as unknown as GetForecastArgs;
 
   try {
     let forecast: ForecastDay[];

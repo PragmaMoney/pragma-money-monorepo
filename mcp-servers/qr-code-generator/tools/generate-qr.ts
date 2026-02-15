@@ -20,7 +20,7 @@ export async function generateQR(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as GenerateQRArgs;
+  const input = applyDefaults(args, schema) as unknown as GenerateQRArgs;
 
   try {
     const options: QRCode.QRCodeToDataURLOptions = {

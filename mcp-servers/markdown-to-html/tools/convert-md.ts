@@ -34,7 +34,7 @@ export async function convertMarkdown(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as ConvertArgs;
+  const input = applyDefaults(args, schema) as unknown as ConvertArgs;
   const options = input.options || {};
 
   try {

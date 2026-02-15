@@ -106,7 +106,7 @@ export async function extractMetadata(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as ExtractArgs;
+  const input = applyDefaults(args, schema) as unknown as ExtractArgs;
 
   try {
     // Validate URL format

@@ -20,7 +20,7 @@ export async function generateImage(
   }
 
   // Apply defaults
-  const input = applyDefaults(args, schema) as GenerateImageArgs;
+  const input = applyDefaults(args, schema) as unknown as GenerateImageArgs;
 
   const startTime = Date.now();
 
@@ -92,7 +92,7 @@ async function generateWithOpenAI(input: GenerateImageArgs): Promise<string> {
     size: sizeMap[input.size || "512x512"],
   });
 
-  return response.data[0].url || "";
+  return response.data?.[0]?.url || "";
 }
 
 async function generateWithReplicate(input: GenerateImageArgs): Promise<string> {

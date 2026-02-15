@@ -92,7 +92,7 @@ export async function convertCurrency(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as ConvertArgs;
+  const input = applyDefaults(args, schema) as unknown as ConvertArgs;
   const from = input.from.toUpperCase();
   const to = input.to.toUpperCase();
 

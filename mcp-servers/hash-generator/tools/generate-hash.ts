@@ -19,7 +19,7 @@ export async function generateHash(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as GenerateHashArgs;
+  const input = applyDefaults(args, schema) as unknown as GenerateHashArgs;
 
   try {
     const algorithm = input.algorithm || "sha256";

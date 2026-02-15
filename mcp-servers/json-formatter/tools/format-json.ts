@@ -36,7 +36,7 @@ export async function formatJSON(
     throw new Error(`Invalid input: ${errors.join(", ")}`);
   }
 
-  const input = applyDefaults(args, schema) as FormatJSONArgs;
+  const input = applyDefaults(args, schema) as unknown as FormatJSONArgs;
   const originalSize = input.json.length;
 
   try {
