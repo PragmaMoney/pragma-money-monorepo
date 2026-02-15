@@ -3,6 +3,8 @@ dotenv.config();
 
 export interface Config {
   port: number;
+  /** Public URL for the proxy (e.g. Cloudflare tunnel URL) */
+  publicUrl: string;
   gatewayAddress: string;
   gatewayRpcUrl: string;
   /** x402 network identifier (e.g. "eip155:10143" for Monad testnet) */
@@ -35,6 +37,7 @@ function parseOrigins(raw: string | undefined): string[] {
 
 export const config: Config = {
   port: Number(process.env.PORT) || 4402,
+  publicUrl: process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 4402}`,
   gatewayAddress:
     process.env.GATEWAY_ADDRESS ||
     "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
@@ -42,7 +45,7 @@ export const config: Config = {
     process.env.SERVICE_REGISTRY_ADDRESS ||
     "0x7fc78b9769CF0739a5AC2a12D6BfCb121De12A59",
   gatewayRpcUrl:
-    process.env.GATEWAY_RPC_URL || "https://testnet-rpc.monad.xyz",
+    process.env.GATEWAY_RPC_URL || "https://monad-testnet.g.alchemy.com/v2/4hrf7RNwCc-ScxIMXTvkM1wMNgXEQvFu",
   x402Network:
     process.env.X402_NETWORK || "eip155:10143",
   usdcAddress:

@@ -1,4 +1,5 @@
 import type { Resource, ServiceType, ResourcePricing, ResourceSchema } from "../types/x402.js";
+import { config } from "../config.js";
 
 /**
  * Helper to create a Resource object with a generated proxy URL.
@@ -14,13 +15,15 @@ export function createResource(params: {
   apiKeyHeader?: string;
   schema?: ResourceSchema;
 }): Resource {
+  // Build full proxy URL using public URL config
+  const baseUrl = config.publicUrl.replace(/\/$/, "");
   return {
     id: params.id,
     name: params.name,
     type: params.type,
     creatorAddress: params.creatorAddress,
     originalUrl: params.originalUrl,
-    proxyUrl: `/proxy/${params.id}`,
+    proxyUrl: `${baseUrl}/proxy/${params.id}`,
     pricing: params.pricing,
     apiKey: params.apiKey,
     apiKeyHeader: params.apiKeyHeader,
