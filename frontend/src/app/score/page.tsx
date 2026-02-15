@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import type { Address } from "viem";
+import { formatUnits, type Address } from "viem";
 import { SCORE_ORACLE_ADDRESS } from "@/lib/contracts";
 import { useAgentRegistry } from "@/hooks/useAgentRegistry";
+import { useAgentPool } from "@/hooks/useAgentPool";
 
 const SCORE_ORACLE_ABI = [
   {
@@ -55,9 +56,18 @@ export default function ScorePage() {
     }
   }, [agentId, agentOptions]);
 
+  const selectedAgent = useMemo(
+    () => agents.find((agent) => agent.agentId.toString() === agentId),
+    [agents, agentId]
+  );
+  const poolAddress = (selectedAgent?.poolAddress as Address | undefined);
+  const { pool, isLoading: poolLoading, error: poolError } = useAgentPool(poolAddress, undefined);
+
+  const formatUsdc = (value: bigint) => formatUnits(value, 6);
+
   const parsed = useMemo(() => {
     const tag1List = ["score"];
-    const tag2List = ["payment"];
+    const tag2List = [""];
     const weightList = [10000];
     return { tag1List, tag2List, weightList };
   }, []);
@@ -136,13 +146,54 @@ export default function ScorePage() {
             </div>
 
             <div className="rounded-xl border border-lobster-border bg-lobster-muted/40 px-4 py-3 text-sm text-lobster-text">
-              Tags and weights are prefilled behind the scenes:
+              Tags and weights:
               <div className="mt-2 text-xs text-lobster-dark">
                 tag1: <span className="font-semibold">score</span> · tag2:{" "}
-                <span className="font-semibold">payment</span> · weight:{" "}
+                <span className="font-semibold">(empty)</span> · weight:{" "}
                 <span className="font-semibold">10000</span> bps
               </div>
             </div>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-lobster-border bg-white/90 p-4 text-sm text-black">
+            <div className="text-sm font-semibold text-black mb-2">Agent Pool</div>
+            {poolLoading && <div className="text-black">Loading pool info...</div>}
+            {poolError && <div className="text-red-600">Failed to load pool info.</div>}
+            {!poolLoading && !poolError && !pool && (
+              <div className="text-black">No pool found for this agent.</div>
+            )}
+            {pool && (
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div className="text-black/70">Pool Address</div>
+                  <div className="font-mono text-[11px] break-all">{poolAddress}</div>
+                </div>
+                <div>
+                  <div className="text-black/70">Daily Cap</div>
+                  <div className="font-semibold">{formatUsdc(pool.dailyCap)} USDC</div>
+                </div>
+                <div>
+                  <div className="text-black/70">Remaining Today</div>
+                  <div className="font-semibold">{formatUsdc(pool.remainingCapToday)} USDC</div>
+                </div>
+                <div>
+                  <div className="text-black/70">Spent Today</div>
+                  <div className="font-semibold">{formatUsdc(pool.spentToday)} USDC</div>
+                </div>
+                <div>
+                  <div className="text-black/70">Total Assets</div>
+                  <div className="font-semibold">{formatUsdc(pool.totalAssets)} USDC</div>
+                </div>
+                <div>
+                  <div className="text-black/70">Total Shares</div>
+                  <div className="font-semibold">{formatUnits(pool.totalSupply, 18)}</div>
+                </div>
+                <div>
+                  <div className="text-black/70">Vesting Duration</div>
+                  <div className="font-semibold">{pool.vestingDuration.toString()}s</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (
