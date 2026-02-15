@@ -33,7 +33,7 @@ export default function RegisterHubPage() {
                 Register Service
               </h2>
               <p className="text-lobster-text mb-4 flex-1">
-                List your API or service on PragmaMoney. Users pay per call via x402 or the on-chain gateway.
+                List your API or service on Clawmono. Users pay per call via x402 or the on-chain gateway.
               </p>
               <span className="text-lobster-primary font-semibold group-hover:underline">
                 Get started

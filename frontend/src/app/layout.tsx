@@ -4,7 +4,7 @@ import { Web3Provider } from "@/components/Web3Provider";
 import { Navigation } from "@/components/Navigation";
 
 export const metadata: Metadata = {
-  title: "PragmaMoney - x402 Payment Gateway for AI Agents",
+  title: "Clawmono - x402 Payment Gateway for AI Agents",
   description:
     "Decentralized payment infrastructure for AI agents and services using x402 protocol on Monad Testnet",
   icons: {

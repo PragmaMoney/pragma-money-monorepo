@@ -18,8 +18,7 @@ export default function HomePage() {
           </div>
 
           <h1 className="font-sans text-7xl sm:text-8xl lg:text-9xl font-bold tracking-tighter leading-[0.85] mb-12 text-white">
-            PRAGMA<br />
-            <span className="text-pragma-primary">MONEY</span>
+            CLAW<span className="text-pragma-primary">MONO</span>
           </h1>
 
           <p className="font-mono text-lg text-white/60 max-w-xl leading-relaxed mb-16">

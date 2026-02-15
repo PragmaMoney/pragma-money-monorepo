@@ -43,7 +43,7 @@ export function Navigation() {
               className="flex items-center space-x-2 text-xl sm:text-2xl font-display font-bold text-white hover:text-pragma-primary transition-colors duration-200"
             >
               <span className="material-icons text-2xl sm:text-3xl">account_balance_wallet</span>
-              <span className="hidden sm:inline">PragmaMoney</span>
+              <span className="hidden sm:inline">Clawmono</span>
               <span className="sm:hidden">Pragma</span>
             </Link>
           </div>

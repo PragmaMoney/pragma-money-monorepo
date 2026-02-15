@@ -214,6 +214,12 @@ export default function SimulationPage() {
     addLog("Saved API key to this browser session.");
   };
 
+  const clearApiKeyFromSession = () => {
+    setApiKey("");
+    window.sessionStorage.removeItem(SIM_API_KEY_STORAGE_KEY);
+    addLog("Cleared API key from session.");
+  };
+
   const applyState = (state: SimState) => {
     if (state.walletA?.address) {
       setAgentAReady(true);
@@ -426,7 +432,6 @@ export default function SimulationPage() {
     setServicesRegistered(false);
     setAgentAPayingServiceB(false);
     setActiveStep(null);
-    setApiKey("");
     setAgentAEoa(null);
     setAgentBEoa(null);
     setAgentASmartAccount(null);
@@ -812,13 +817,14 @@ export default function SimulationPage() {
     const frameRow = rowByFacing[sprite.facing];
     const meta = sheetMeta[key];
     if (!meta) {
+      const fallbackSize = Math.max(28, Math.min(54, Math.round(tilePx * 1.6)));
       return {
-        width: 34,
-        height: 42,
+        width: fallbackSize,
+        height: Math.round(fallbackSize * 1.24),
         background: key === "A" ? "#f97316" : "#3b82f6",
       };
     }
-    const desiredHeightPx = 80;
+    const desiredHeightPx = Math.max(54, Math.min(92, Math.round(tilePx * 2.55)));
     const scale = desiredHeightPx / meta.frameH;
     const outW = Math.round(meta.frameW * scale);
     const outH = Math.round(meta.frameH * scale);
@@ -881,6 +887,30 @@ export default function SimulationPage() {
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                   <polyline points="17 21 17 13 7 13 7 21" />
                   <polyline points="7 3 7 8 15 8" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={clearApiKeyFromSession}
+                className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 hover:bg-white/20"
+                aria-label="Clear API key"
+                title="Clear API key"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="23 4 23 10 17 10" />
+                  <polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10" />
+                  <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14" />
                 </svg>
               </button>
             </div>

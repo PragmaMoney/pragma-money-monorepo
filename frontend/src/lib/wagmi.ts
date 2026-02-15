@@ -8,7 +8,7 @@ export const config = createConfig({
   connectors: [
     injected({ target: "metaMask" }),
     coinbaseWallet({
-      appName: "PragmaMoney",
+      appName: "Clawmono",
       appLogoUrl: undefined,
     }),
   ],

@@ -345,7 +345,7 @@ export default function RegisterServicePage() {
             Register Your Service
           </h1>
           <p className="text-xl text-lobster-text max-w-2xl mx-auto">
-            List your API or service on PragmaMoney and start earning USDC for every
+            List your API or service on Clawmono and start earning USDC for every
             call
           </p>
         </div>
@@ -505,7 +505,7 @@ export default function RegisterServicePage() {
                           Proxy-Wrapped (Recommended)
                         </span>
                         <p className="text-xs text-lobster-text mt-1">
-                          PragmaMoney proxy handles x402 payment verification.
+                          Clawmono proxy handles x402 payment verification.
                           Your endpoint receives requests after payment is confirmed.
                         </p>
                       </div>
@@ -580,7 +580,7 @@ export default function RegisterServicePage() {
                   />
                   <p className="text-xs text-lobster-text mt-1">
                     Your service's API endpoint URL. It will be wrapped by
-                    PragmaMoney's payment proxy — users will access it through the
+                    Clawmono's payment proxy — users will access it through the
                     proxy URL.
                   </p>
                 </div>
