@@ -380,17 +380,21 @@ async function main() {
   console.log(`--- Step 4: Seed Agent A's pool with ${SEED_AMOUNT} USDC ---`);
   const usdc = new Contract(USDC_ADDRESS, ERC20_ABI, funder);
   const seedWei = parseUnits(SEED_AMOUNT, USDC_DECIMALS);
+  const poolAddressA = regA.poolAddress;
+  if (!poolAddressA) {
+    throw new Error("Agent A poolAddress is missing (likely NATIVE_X402 mode).");
+  }
 
-  const poolA = new Contract(regA.poolAddress, AGENT_POOL_ABI, provider);
+  const poolA = new Contract(poolAddressA, AGENT_POOL_ABI, provider);
   const poolAAssets: bigint = await poolA.totalAssets();
 
   if (poolAAssets >= seedWei) {
     log("already seeded", `${formatUnits(poolAAssets, USDC_DECIMALS)} USDC`);
   } else {
-    const approveTx = await usdc.approve(regA.poolAddress, seedWei);
+    const approveTx = await usdc.approve(poolAddressA, seedWei);
     await approveTx.wait();
     await new Promise((r) => setTimeout(r, 2000));
-    const pool = new Contract(regA.poolAddress, AGENT_POOL_ABI, funder);
+    const pool = new Contract(poolAddressA, AGENT_POOL_ABI, funder);
     const depositTx = await pool.deposit(seedWei, await funder.getAddress());
     await depositTx.wait();
     log("deposit tx", depositTx.hash);
@@ -461,16 +465,20 @@ async function main() {
 
   // ── Step 9: Seed Agent B's pool ───────────────────────────────────────────
   console.log(`--- Step 9: Seed Agent B's pool with ${SEED_AMOUNT} USDC ---`);
-  const poolB = new Contract(regB.poolAddress, AGENT_POOL_ABI, provider);
+  const poolAddressB = regB.poolAddress;
+  if (!poolAddressB) {
+    throw new Error("Agent B poolAddress is missing (likely NATIVE_X402 mode).");
+  }
+  const poolB = new Contract(poolAddressB, AGENT_POOL_ABI, provider);
   const poolBAssets: bigint = await poolB.totalAssets();
 
   if (poolBAssets >= seedWei) {
     log("already seeded", `${formatUnits(poolBAssets, USDC_DECIMALS)} USDC`);
   } else {
-    const approveTx = await usdc.approve(regB.poolAddress, seedWei);
+    const approveTx = await usdc.approve(poolAddressB, seedWei);
     await approveTx.wait();
     await new Promise((r) => setTimeout(r, 2000));
-    const pool = new Contract(regB.poolAddress, AGENT_POOL_ABI, funder);
+    const pool = new Contract(poolAddressB, AGENT_POOL_ABI, funder);
     const depositTx = await pool.deposit(seedWei, await funder.getAddress());
     await depositTx.wait();
     log("deposit tx", depositTx.hash);

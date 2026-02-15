@@ -343,7 +343,8 @@ export default function SimulationPage() {
   };
 
   const isWithinWanderBounds = (tx: number, ty: number) => {
-    const insideBounds = tx >= 3 && tx <= 20 && ty >= 4 && ty <= 9;
+    // Include lower map rows so agents can keep roaming after seed step.
+    const insideBounds = tx >= 3 && tx <= 20 && ty >= 4 && ty <= 13;
     const inTradeBlock = tx >= 9 && tx <= 14 && ty >= 6 && ty <= 8;
     return insideBounds && !inTradeBlock;
   };
@@ -563,7 +564,7 @@ export default function SimulationPage() {
     }
     if (step === "register") {
       await Promise.all([
-        moveAgentTo("A", { tx: 10, ty: 4 }, "walking"),
+        moveAgentTo("A", { tx: 11, ty: 4 }, "walking"),
         moveAgentTo("B", { tx: 13, ty: 4 }, "walking"),
       ]);
       setAgentIdleFacing("A", "up");
@@ -572,8 +573,8 @@ export default function SimulationPage() {
     }
     if (step === "seed") {
       await Promise.all([
-        moveAgentTo("A", { tx: 6, ty: 11 }, "walking"),
-        moveAgentTo("B", { tx: 6, ty: 13 }, "walking"),
+        moveAgentTo("A", { tx: 6, ty: 12 }, "walking"),
+        moveAgentTo("B", { tx: 7, ty: 13 }, "walking"),
       ]);
       setAgentIdleFacing("A", "left");
       setAgentIdleFacing("B", "left");
@@ -587,7 +588,7 @@ export default function SimulationPage() {
     if (step === "pay") {
       await Promise.all([
         moveAgentTo("A", { tx: 9, ty: 8 }, "walking"),
-        moveAgentTo("B", { tx: 14, ty: 8 }, "walking"),
+        moveAgentTo("B", { tx: 15, ty: 8 }, "walking"),
       ]);
       setAgentIdleFacing("A", "right");
       setAgentIdleFacing("B", "left");

@@ -1,0 +1,397 @@
+{
+  "runId": "sim1",
+  "createdAt": "2026-02-15T16:19:08.047Z",
+  "updatedAt": "2026-02-15T16:23:30.571Z",
+  "logs": [
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "✅ SPLIT VERIFIED: Revenue split correctly (40% to pool, 60% to wallet)."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "  - Wallet should receive: ~0.0006 USDC"
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "  - Pool should receive: ~0.0004 USDC"
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "Expected split (40% to pool):"
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "Total received: 0.001 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "Wallet B delta: +0.0006 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "Pool B delta: +0.0004 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "POST-PAYMENT: Agent B wallet USDC: 0.5006 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.570Z",
+      "text": "POST-PAYMENT: Agent B pool assets: 0.5004 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.303Z",
+      "text": "--- REVENUE SPLIT VERIFICATION ---"
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Score submitted: 90."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Total cost: 0.001 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Payment ID: 0xd9ad7da1ba0d655c5a8a26f2d177b98819ad5066767b73ce0887e205c43045b5."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Reputation tx: 0xcc0eb8724cbad72fa2c64eddab7890a9bb3e8c158f9bcd0be9bb75cc8dcaa048."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Pay tx: 0x5a3454c1342f08898a2bbaa25c142431d6618ad229bf024455ff7812df4b9ac2."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Gateway: 0x76f3a9aE46D58761f073a8686Eb60194B1917E27."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Payer smart account: 0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9."
+    },
+    {
+      "ts": "2026-02-15T16:23:30.187Z",
+      "text": "Agent A paid for service Simulation-Service-sim1-mlnyfbr2-a1be via x402 gateway."
+    },
+    {
+      "ts": "2026-02-15T16:23:15.382Z",
+      "text": "PRE-PAYMENT: Agent B wallet USDC: 0.5 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:15.382Z",
+      "text": "PRE-PAYMENT: Agent B pool assets: 0.5 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Register service tx: 0xc2ed0e94231e2fbc29d7d1c00a77c78202b8e55a2af154bfe9bb0f7af91300ba."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Service price: 0.001 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Service URL: https://sim.example.com/api."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Service ID: 0x6001fa300d37b2815dacc630d8607c4f968d937f6d7ee20135d2861b01e0dee2."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Service owner smart account: 0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Service owner agentId: 238."
+    },
+    {
+      "ts": "2026-02-15T16:23:06.447Z",
+      "text": "Service registered by Agent B: Simulation-Service-sim1-mlnyfbr2-a1be."
+    },
+    {
+      "ts": "2026-02-15T16:23:03.230Z",
+      "text": "Preflight: EntryPoint deposit 1.860951751 MON."
+    },
+    {
+      "ts": "2026-02-15T16:23:03.230Z",
+      "text": "Preflight: Agent B smart USDC 0.5."
+    },
+    {
+      "ts": "2026-02-15T16:23:03.229Z",
+      "text": "Preflight: Agent B smart MON 0.0035."
+    },
+    {
+      "ts": "2026-02-15T16:22:38.450Z",
+      "text": "Pool B totalAssets: 0.5 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:38.450Z",
+      "text": "Pool A totalAssets: 0.5 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:38.450Z",
+      "text": "Agent B smart account: 0.0035 MON, 0.5 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:38.450Z",
+      "text": "Agent A smart account: 0.0035 MON, 0.5 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:38.450Z",
+      "text": "Funder balance: 8.86554173036100689 MON, 34.9026 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:37.342Z",
+      "text": "Pool pull tx (B): 0x1cddb008ea1d64264ac5b321dccff617f33bb4a864c33787de369a9f98b57b33."
+    },
+    {
+      "ts": "2026-02-15T16:22:37.342Z",
+      "text": "Agent B pulled 0.5 USDC from pool."
+    },
+    {
+      "ts": "2026-02-15T16:22:31.827Z",
+      "text": "Pool pull tx: 0xd28021eaa34cc171c3a46662ab3f4939df4dfae9a4eca442f8a9bc4d9bc215da."
+    },
+    {
+      "ts": "2026-02-15T16:22:31.827Z",
+      "text": "Agent A pulled 0.5 USDC from pool."
+    },
+    {
+      "ts": "2026-02-15T16:22:25.274Z",
+      "text": "Seed deposit tx: 0xccfc084d01e22878e607fb0dec107025fa4cd52e9fb822e0bffe3b09d5ba579e."
+    },
+    {
+      "ts": "2026-02-15T16:22:25.274Z",
+      "text": "Seed approve tx: 0x80948ced96ec58f42a87890660954915d68a84bacd87d8e654c42e490b30a6d2."
+    },
+    {
+      "ts": "2026-02-15T16:22:25.274Z",
+      "text": "Seeded pool 0xDb43D575dA871Ef6A5D7DbfCf359EEC36Af0497C with 1.0 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:14.662Z",
+      "text": "Seed deposit tx: 0x819d9875fe653a96b24111406d5041f77b4b3d7c985846c74cc40fd895c623db."
+    },
+    {
+      "ts": "2026-02-15T16:22:14.662Z",
+      "text": "Seed approve tx: 0x1bbbd59211ac73819927c41786b33ecee4c9abca96bea4715df7d0369d54c5f8."
+    },
+    {
+      "ts": "2026-02-15T16:22:14.662Z",
+      "text": "Seeded pool 0x49e43885c1A1cE05623665b54641FA868f34e5d3 with 1.0 USDC."
+    },
+    {
+      "ts": "2026-02-15T16:22:04.015Z",
+      "text": "Prefund tx: 0x9329d196163267e1abff71e10ceae6f65a5b0772a6472fcec4f547eb2f7e84a8."
+    },
+    {
+      "ts": "2026-02-15T16:22:04.015Z",
+      "text": "EntryPoint prefund: 0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a => 2.0 MON."
+    },
+    {
+      "ts": "2026-02-15T16:21:58.664Z",
+      "text": "Prefund tx: 0x05d1b2d942581651833dbcaa3a446ad4af00ab9bff5b7d3c284d738d4317ab6a."
+    },
+    {
+      "ts": "2026-02-15T16:21:58.664Z",
+      "text": "EntryPoint prefund: 0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9 => 2.0 MON."
+    },
+    {
+      "ts": "2026-02-15T16:21:53.235Z",
+      "text": "Fund smart tx: 0xacce9b797af578e8d52c46534f967fdf8f0b567b8e1e2871d4d935a4867e71d1."
+    },
+    {
+      "ts": "2026-02-15T16:21:53.235Z",
+      "text": "Funded smart account 0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a with 0.003 MON."
+    },
+    {
+      "ts": "2026-02-15T16:21:47.220Z",
+      "text": "Fund smart tx: 0xe18e5e9a19274b04694ef03e47b0c0f88004cedbd223eb35c98e5ecb60097d46."
+    },
+    {
+      "ts": "2026-02-15T16:21:47.199Z",
+      "text": "Funded smart account 0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9 with 0.003 MON."
+    },
+    {
+      "ts": "2026-02-15T16:21:31.825Z",
+      "text": "Agent B setWallet tx: 0xe792f85369f8abe25df9b708df162c3c0918121e132a906125e2f5501aaf6e92."
+    },
+    {
+      "ts": "2026-02-15T16:21:31.825Z",
+      "text": "Agent B register tx: 0xad90472649aa4eec5c8e626ef5f30c7a3b7b8270a53b92edf9fa4463ed08ea97."
+    },
+    {
+      "ts": "2026-02-15T16:21:31.825Z",
+      "text": "Agent B needsFunding: true (splitRatio: 40% to pool)."
+    },
+    {
+      "ts": "2026-02-15T16:21:31.825Z",
+      "text": "Agent B pool: 0xDb43D575dA871Ef6A5D7DbfCf359EEC36Af0497C."
+    },
+    {
+      "ts": "2026-02-15T16:21:31.825Z",
+      "text": "Agent B smart account: 0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a."
+    },
+    {
+      "ts": "2026-02-15T16:21:31.825Z",
+      "text": "Agent B registered: agentId 238."
+    },
+    {
+      "ts": "2026-02-15T16:20:33.749Z",
+      "text": "Agent A setWallet tx: 0x002d13101722ec2a2cf942e0f802e783ea97e39c955efcb8cd56c92d3d685b3d."
+    },
+    {
+      "ts": "2026-02-15T16:20:33.749Z",
+      "text": "Agent A register tx: 0xfddd1f33e55c581adfc541111b4e5db54399722bbb6409a4dcb9f73ff0ec5501."
+    },
+    {
+      "ts": "2026-02-15T16:20:33.749Z",
+      "text": "Agent A needsFunding: true (splitRatio: 40% to pool)."
+    },
+    {
+      "ts": "2026-02-15T16:20:33.749Z",
+      "text": "Agent A pool: 0x49e43885c1A1cE05623665b54641FA868f34e5d3."
+    },
+    {
+      "ts": "2026-02-15T16:20:33.749Z",
+      "text": "Agent A smart account: 0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9."
+    },
+    {
+      "ts": "2026-02-15T16:20:33.749Z",
+      "text": "Agent A registered: agentId 236."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Contracts: EntryPoint 0x0000000071727De22E5E9d8BAf0edAc6f37da032."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Contracts: x402 Gateway 0x76f3a9aE46D58761f073a8686Eb60194B1917E27."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Contracts: ServiceRegistry 0x7fc78b9769CF0739a5AC2a12D6BfCb121De12A59."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Contracts: IdentityRegistry 0x8004A818BFB912233c491871b3d84c89A494BD9e."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Agent B EOA balance: 0.5 MON."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Agent A EOA balance: 0.5 MON."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Funder balance: 13.57752798236100689 MON."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Funding tx B: 0xdb9f185b653fba68b7c618cdfc0e4d753fa59912f02c5c5194148a953aa3641e."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Funding tx A: 0x573686a4cc53c4424e603c54f155fdfe3b55d6c16f7a550af46738f57b5b1e33."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Funder address: 0x567bDc4086eFc460811798d1075a21359E34072d."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Agent B EOA: 0xdb9405B2B606f01b690e806e96d9e4393B05Ff47 (funded 0.5 MON)."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.354Z",
+      "text": "Agent A EOA: 0xd6f6AeCaE83dCCe3125204dEd7B900b32184B8C8 (funded 0.5 MON)."
+    },
+    {
+      "ts": "2026-02-15T16:19:20.352Z",
+      "text": "Initialized new EOAs."
+    }
+  ],
+  "walletA": {
+    "privateKey": "0x84b6cb157e31466a518c8123a0b1c9b605a1d805174d86f3ba1bccb6b9c3e6bd",
+    "address": "0xd6f6AeCaE83dCCe3125204dEd7B900b32184B8C8",
+    "createdAt": "2026-02-15T16:19:08.086Z"
+  },
+  "walletB": {
+    "privateKey": "0x531394674396ec4741d62e718eaf34b17b0629ee5cf098b9b1be3e6973c27e16",
+    "address": "0xdb9405B2B606f01b690e806e96d9e4393B05Ff47",
+    "createdAt": "2026-02-15T16:19:08.086Z"
+  },
+  "txHashes": {
+    "fundA": "0x573686a4cc53c4424e603c54f155fdfe3b55d6c16f7a550af46738f57b5b1e33",
+    "fundB": "0xdb9f185b653fba68b7c618cdfc0e4d753fa59912f02c5c5194148a953aa3641e",
+    "regA_register": "0xfddd1f33e55c581adfc541111b4e5db54399722bbb6409a4dcb9f73ff0ec5501",
+    "regA_setWallet": "0x002d13101722ec2a2cf942e0f802e783ea97e39c955efcb8cd56c92d3d685b3d",
+    "regB_register": "0xad90472649aa4eec5c8e626ef5f30c7a3b7b8270a53b92edf9fa4463ed08ea97",
+    "regB_setWallet": "0xe792f85369f8abe25df9b708df162c3c0918121e132a906125e2f5501aaf6e92",
+    "fundSmart_0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9": "0xe18e5e9a19274b04694ef03e47b0c0f88004cedbd223eb35c98e5ecb60097d46",
+    "fundSmart_0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a": "0xacce9b797af578e8d52c46534f967fdf8f0b567b8e1e2871d4d935a4867e71d1",
+    "prefund_0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9": "0x05d1b2d942581651833dbcaa3a446ad4af00ab9bff5b7d3c284d738d4317ab6a",
+    "prefund_0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a": "0x9329d196163267e1abff71e10ceae6f65a5b0772a6472fcec4f547eb2f7e84a8",
+    "seedApprove_0x49e43885c1A1cE05623665b54641FA868f34e5d3": "0x1bbbd59211ac73819927c41786b33ecee4c9abca96bea4715df7d0369d54c5f8",
+    "seedDeposit_0x49e43885c1A1cE05623665b54641FA868f34e5d3": "0x819d9875fe653a96b24111406d5041f77b4b3d7c985846c74cc40fd895c623db",
+    "seedApprove_0xDb43D575dA871Ef6A5D7DbfCf359EEC36Af0497C": "0x80948ced96ec58f42a87890660954915d68a84bacd87d8e654c42e490b30a6d2",
+    "seedDeposit_0xDb43D575dA871Ef6A5D7DbfCf359EEC36Af0497C": "0xccfc084d01e22878e607fb0dec107025fa4cd52e9fb822e0bffe3b09d5ba579e",
+    "pullA": "0xd28021eaa34cc171c3a46662ab3f4939df4dfae9a4eca442f8a9bc4d9bc215da",
+    "pullB": "0x1cddb008ea1d64264ac5b321dccff617f33bb4a864c33787de369a9f98b57b33",
+    "registerService": "0xc2ed0e94231e2fbc29d7d1c00a77c78202b8e55a2af154bfe9bb0f7af91300ba",
+    "pay": "0x5a3454c1342f08898a2bbaa25c142431d6618ad229bf024455ff7812df4b9ac2",
+    "reputation": "0xcc0eb8724cbad72fa2c64eddab7890a9bb3e8c158f9bcd0be9bb75cc8dcaa048"
+  },
+  "notes": [
+    "Funded Agent A EOA: 0xd6f6AeCaE83dCCe3125204dEd7B900b32184B8C8 (0.5 MON)",
+    "Funded Agent B EOA: 0xdb9405B2B606f01b690e806e96d9e4393B05Ff47 (0.5 MON)"
+  ],
+  "regA": {
+    "agentId": "236",
+    "smartAccount": "0xB9DB79227aB6620029982E7a5fd7B55E22D4e7d9",
+    "poolAddress": "0x49e43885c1A1cE05623665b54641FA868f34e5d3",
+    "owner": "0x567bDc4086eFc460811798d1075a21359E34072d",
+    "registeredAt": "2026-02-15T16:20:33.259Z",
+    "txHashes": {
+      "register": "0xfddd1f33e55c581adfc541111b4e5db54399722bbb6409a4dcb9f73ff0ec5501",
+      "setWallet": "0x002d13101722ec2a2cf942e0f802e783ea97e39c955efcb8cd56c92d3d685b3d"
+    },
+    "needsFunding": true,
+    "splitRatio": 4000
+  },
+  "regB": {
+    "agentId": "238",
+    "smartAccount": "0x7f09352Cb3E5d3C4bc65fA8FF21f5E4083d1836a",
+    "poolAddress": "0xDb43D575dA871Ef6A5D7DbfCf359EEC36Af0497C",
+    "owner": "0x567bDc4086eFc460811798d1075a21359E34072d",
+    "registeredAt": "2026-02-15T16:21:31.337Z",
+    "txHashes": {
+      "register": "0xad90472649aa4eec5c8e626ef5f30c7a3b7b8270a53b92edf9fa4463ed08ea97",
+      "setWallet": "0xe792f85369f8abe25df9b708df162c3c0918121e132a906125e2f5501aaf6e92"
+    },
+    "needsFunding": true,
+    "splitRatio": 4000
+  },
+  "balances": {
+    "funderMon": "8.86554173036100689",
+    "funderUsdc": "34.9026",
+    "agentASmartMon": "0.0035",
+    "agentASmartUsdc": "0.5",
+    "agentBSmartMon": "0.0035",
+    "agentBSmartUsdc": "0.5006",
+    "poolAUsdc": "0.5",
+    "poolBUsdc": "0.5004"
+  },
+  "service": {
+    "name": "Simulation-Service-sim1-mlnyfbr2-a1be",
+    "url": "https://sim.example.com/api",
+    "idHex": "0x6001fa300d37b2815dacc630d8607c4f968d937f6d7ee20135d2861b01e0dee2",
+    "priceWei": "1000",
+    "ownerAgentId": "238"
+  }
+}
