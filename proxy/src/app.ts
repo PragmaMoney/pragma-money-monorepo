@@ -208,5 +208,24 @@ app.all("/proxy/:resourceId", x402Gate, (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// RPC Proxy (avoids CORS issues for frontend)
+// ---------------------------------------------------------------------------
+
+app.post("/rpc", async (req: Request, res: Response) => {
+  try {
+    const response = await fetch(config.gatewayRpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req.body),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("[rpc-proxy] Error:", err);
+    res.status(502).json({ error: "RPC proxy error" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 
 export { app };
