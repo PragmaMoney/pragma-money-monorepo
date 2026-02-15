@@ -340,3 +340,51 @@ contract RedeployAll is Script {
 }
 
 // forge script script/Deploy.s.sol:RedeployAll --rpc-url monad_testnet --broadcast --verify -vvvv
+
+import {IdentityRegistryUpgradeable} from "../src/ERC-8004/IdentityRegistry.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+/// @title UpgradeIdentityRegistry
+/// @notice Upgrades the IdentityRegistry proxy to v3 with funding config support
+/// @dev UUPS upgrade: deploys new implementation, calls upgradeToAndCall on proxy
+contract UpgradeIdentityRegistry is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
+        Addresses addresses = new Addresses();
+        string memory chain = addresses.monadTestnet();
+        address identityRegistryProxy = addresses.getAddress(chain, "IdentityRegistry");
+
+        console2.log("=== UpgradeIdentityRegistry ===");
+        console2.log("Deployer:", deployer);
+        console2.log("IdentityRegistry proxy:", identityRegistryProxy);
+        console2.log("");
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        // 1. Deploy new implementation
+        IdentityRegistryUpgradeable newImpl = new IdentityRegistryUpgradeable();
+        console2.log("1. New implementation deployed:", address(newImpl));
+
+        // 2. Prepare reinitializer call (v3)
+        bytes memory initData = abi.encodeCall(IdentityRegistryUpgradeable.initialize, ());
+
+        // 3. Upgrade proxy to new implementation with reinitializer
+        UUPSUpgradeable(identityRegistryProxy).upgradeToAndCall(address(newImpl), initData);
+        console2.log("2. Proxy upgraded to new implementation");
+
+        // 4. Verify version
+        string memory version = IdentityRegistryUpgradeable(identityRegistryProxy).getVersion();
+        console2.log("3. New version:", version);
+
+        vm.stopBroadcast();
+
+        console2.log("");
+        console2.log("=== Upgrade Summary ===");
+        console2.log("IdentityRegistry (proxy):", identityRegistryProxy);
+        console2.log("IdentityRegistry (impl): ", address(newImpl));
+        console2.log("Version:                 ", version);
+    }
+}
+
+// forge script script/Deploy.s.sol:UpgradeIdentityRegistry --rpc-url monad_testnet --broadcast --verify -vvvv

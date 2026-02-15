@@ -80,12 +80,17 @@ contract x402GatewayTest is BaseTest {
             "Test Service",
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         deal(address(usdc), payer, 1_000_000e6);
         vm.prank(payer);
         usdc.approve(address(gateway), type(uint256).max);
+
+        // Set default funding config: needsFunding=true, splitRatio=4000 (40%)
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 4000);
     }
 
     // ==================== payForService ====================
@@ -291,5 +296,249 @@ contract x402GatewayTest is BaseTest {
         gateway.payForService(SERVICE_ID, 1);
         assertEq(gateway.nonce(), 3);
         vm.stopPrank();
+    }
+
+    // ==================== PaymentMode tests ====================
+
+    /// @notice PROXY_WRAPPED service splits revenue 40/60 (pool/wallet)
+    function test_PayForService_PROXY_WRAPPED_SplitsRevenue() public {
+        // The default SERVICE_ID is already registered with PROXY_WRAPPED
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        uint256 expectedPoolShare = (total * 4000) / 10_000; // 40%
+        uint256 expectedAgentShare = total - expectedPoolShare; // 60%
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore + expectedPoolShare, "Pool should receive 40%");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + expectedAgentShare, "Agent should receive 60%");
+    }
+
+    /// @notice Configurable split at 30%
+    function test_PayForService_SplitAt30Percent() public {
+        // Set agent funding config to 30% split
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 3000);
+
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        uint256 expectedPoolShare = (total * 3000) / 10_000; // 30%
+        uint256 expectedAgentShare = total - expectedPoolShare; // 70%
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore + expectedPoolShare, "Pool should receive 30%");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + expectedAgentShare, "Agent should receive 70%");
+    }
+
+    /// @notice Configurable split at 50%
+    function test_PayForService_SplitAt50Percent() public {
+        // Set agent funding config to 50% split
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 5000);
+
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        uint256 expectedPoolShare = (total * 5000) / 10_000; // 50%
+        uint256 expectedAgentShare = total - expectedPoolShare; // 50%
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore + expectedPoolShare, "Pool should receive 50%");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + expectedAgentShare, "Agent should receive 50%");
+    }
+
+    /// @notice Configurable split at 100% (all to pool)
+    function test_PayForService_SplitAt100Percent() public {
+        // Set agent funding config to 100% split
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 10000);
+
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore + total, "Pool should receive 100%");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore, "Agent should receive nothing");
+    }
+
+    /// @notice Self-funded agent (needsFunding=false) receives 100% to wallet
+    function test_PayForService_SelfFunded_FullToWallet() public {
+        // Set agent as self-funded
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, false, 4000); // splitRatio ignored when needsFunding=false
+
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore, "Pool should receive nothing for self-funded");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + total, "Agent should receive 100%");
+    }
+
+    /// @notice Self-funded agent ignores splitRatio setting
+    function test_PayForService_SelfFunded_IgnoresSplitRatio() public {
+        // Set high splitRatio but needsFunding=false
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, false, 9000);
+
+        uint256 calls = 5;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        // Despite 90% split ratio, self-funded agent gets 100%
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore, "Pool unchanged for self-funded");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + total, "Agent receives 100%");
+    }
+
+    /// @notice Zero split ratio sends 100% to wallet
+    function test_PayForService_ZeroSplitRatio_FullToWallet() public {
+        // Set needsFunding=true but splitRatio=0
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 0);
+
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore, "Pool receives nothing with zero ratio");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + total, "Agent receives 100% with zero ratio");
+    }
+
+    /// @notice Config can change between payments
+    function test_PayForService_ConfigChangeBetweenPayments() public {
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        // First payment with 30% split
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 3000);
+
+        uint256 poolBal1 = usdc.balanceOf(address(pool));
+        uint256 agentBal1 = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        uint256 poolShare1 = (total * 3000) / 10_000;
+        assertEq(usdc.balanceOf(address(pool)), poolBal1 + poolShare1);
+        assertEq(usdc.balanceOf(serviceOwner), agentBal1 + (total - poolShare1));
+
+        // Change to 60% split
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, true, 6000);
+
+        uint256 poolBal2 = usdc.balanceOf(address(pool));
+        uint256 agentBal2 = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(SERVICE_ID, calls);
+
+        uint256 poolShare2 = (total * 6000) / 10_000;
+        assertEq(usdc.balanceOf(address(pool)), poolBal2 + poolShare2, "Pool uses new 60% ratio");
+        assertEq(usdc.balanceOf(serviceOwner), agentBal2 + (total - poolShare2), "Agent uses new 40% share");
+    }
+
+    /// @notice NATIVE_X402 service still splits based on agent config (not payment mode)
+    function test_PayForService_NATIVE_X402_StillSplitsBasedOnAgentConfig() public {
+        // Register a NATIVE_X402 service
+        bytes32 nativeServiceId = keccak256("native-x402-service");
+
+        vm.prank(serviceOwner);
+        registry.registerService(
+            nativeServiceId,
+            agentId,
+            "Native x402 Service",
+            PRICE_PER_CALL,
+            "https://native.example.com",
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.NATIVE_X402
+        );
+
+        // Agent has needsFunding=true, splitRatio=4000 from setUp
+        uint256 calls = 10;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(nativeServiceId, calls);
+
+        // PaymentMode doesn't affect split - agent config does
+        uint256 expectedPoolShare = (total * 4000) / 10_000; // 40%
+        uint256 expectedAgentShare = total - expectedPoolShare; // 60%
+
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore + expectedPoolShare, "Pool receives 40% based on agent config");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + expectedAgentShare, "Agent receives 60% based on agent config");
+    }
+
+    /// @notice NATIVE_X402 service with self-funded agent sends 100% to wallet
+    function test_PayForService_NATIVE_X402_SelfFunded_FullToWallet() public {
+        // Register a NATIVE_X402 service using existing agent
+        bytes32 nativeServiceId2 = keccak256("native-x402-self-funded");
+
+        vm.prank(serviceOwner);
+        registry.registerService(
+            nativeServiceId2,
+            agentId,
+            "Native x402 Self Funded Test",
+            PRICE_PER_CALL,
+            "https://native-self-funded.example.com",
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.NATIVE_X402
+        );
+
+        // Set agent as self-funded
+        vm.prank(serviceOwner);
+        agentFactory.setFundingConfig(agentId, false, 0);
+
+        uint256 calls = 5;
+        uint256 total = PRICE_PER_CALL * calls;
+
+        uint256 poolBalBefore = usdc.balanceOf(address(pool));
+        uint256 agentBalBefore = usdc.balanceOf(serviceOwner);
+
+        vm.prank(payer);
+        gateway.payForService(nativeServiceId2, calls);
+
+        // Self-funded agent gets 100%
+        assertEq(usdc.balanceOf(address(pool)), poolBalBefore, "Pool balance unchanged for self-funded");
+        assertEq(usdc.balanceOf(serviceOwner), agentBalBefore + total, "Agent received 100%");
     }
 }

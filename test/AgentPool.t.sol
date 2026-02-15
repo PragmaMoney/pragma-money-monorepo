@@ -154,4 +154,66 @@ contract AgentPoolTest is BaseTest {
         vm.expectRevert(Errors.NotAuthorized.selector);
         pool.revokeAgent();
     }
+
+    // ==================== contribute() tests ====================
+
+    /// @notice contribute with valid amount increases total assets without minting shares
+    function test_contribute_validAmount_increasesTotalAssets() public {
+        uint256 amount = 100e6;
+        _fundAndApprove(alice, pool, amount);
+
+        uint256 totalAssetsBefore = pool.totalAssets();
+        uint256 totalSupplyBefore = pool.totalSupply();
+
+        vm.prank(alice);
+        pool.contribute(amount);
+
+        assertEq(pool.totalAssets(), totalAssetsBefore + amount, "totalAssets should increase");
+        assertEq(pool.totalSupply(), totalSupplyBefore, "totalSupply should not change (no shares minted)");
+    }
+
+    /// @notice contribute with zero amount reverts
+    function test_contribute_zeroAmount_reverts() public {
+        vm.prank(alice);
+        vm.expectRevert(Errors.ZeroAmount.selector);
+        pool.contribute(0);
+    }
+
+    /// @notice contribute emits Contributed event
+    function test_contribute_emitsContributedEvent() public {
+        uint256 amount = 100e6;
+        _fundAndApprove(alice, pool, amount);
+
+        vm.expectEmit(true, true, false, true);
+        emit AgentPool.Contributed(alice, amount);
+
+        vm.prank(alice);
+        pool.contribute(amount);
+    }
+
+    /// @notice contribute increases share value for existing depositors
+    function test_contribute_increasesShareValue() public {
+        // Alice deposits 1000 USDC, gets shares
+        uint256 depositAmount = 1000e6;
+        _fundAndApprove(alice, pool, depositAmount);
+
+        vm.prank(alice);
+        uint256 aliceShares = pool.deposit(depositAmount, alice);
+
+        // Initial share value
+        uint256 valueBeforeContribute = pool.convertToAssets(aliceShares);
+        assertEq(valueBeforeContribute, depositAmount, "Initial value should equal deposit");
+
+        // Bob contributes 500 USDC (appreciation for investors)
+        uint256 contributeAmount = 500e6;
+        _fundAndApprove(bob, pool, contributeAmount);
+
+        vm.prank(bob);
+        pool.contribute(contributeAmount);
+
+        // Alice's shares now worth more (allow 1 wei rounding error from ERC-4626)
+        uint256 valueAfterContribute = pool.convertToAssets(aliceShares);
+        assertApproxEqAbs(valueAfterContribute, depositAmount + contributeAmount, 1, "Share value should increase by contribution");
+        assertEq(pool.totalAssets(), depositAmount + contributeAmount, "Total assets should reflect contribution");
+    }
 }

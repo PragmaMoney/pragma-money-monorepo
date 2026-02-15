@@ -88,7 +88,8 @@ contract ServiceRegistryTest is BaseTest {
             agentWallet,
             SERVICE_NAME,
             PRICE_PER_CALL,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         registry.registerService(
@@ -97,7 +98,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         IServiceRegistry.Service memory service = registry.getService(SERVICE_ID);
@@ -129,7 +131,7 @@ contract ServiceRegistryTest is BaseTest {
 
         for (uint256 i = 0; i < 5; i++) {
             vm.prank(serviceOwner);
-            registry.registerService(ids[i], agentId, SERVICE_NAME, PRICE_PER_CALL, ENDPOINT, types[i]);
+            registry.registerService(ids[i], agentId, SERVICE_NAME, PRICE_PER_CALL, ENDPOINT, types[i], IServiceRegistry.PaymentMode.PROXY_WRAPPED);
 
             IServiceRegistry.Service memory svc = registry.getService(ids[i]);
             assertEq(uint256(svc.serviceType), uint256(types[i]));
@@ -144,7 +146,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(serviceOwner);
@@ -157,7 +160,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
     }
 
@@ -170,7 +174,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             0,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
     }
 
@@ -183,7 +188,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             "",
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
     }
 
@@ -196,7 +202,8 @@ contract ServiceRegistryTest is BaseTest {
             "",
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
     }
 
@@ -211,7 +218,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
     }
 
@@ -235,7 +243,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         uint256 newPrice = 5000;
@@ -258,7 +267,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(stranger);
@@ -278,7 +288,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(serviceOwner);
@@ -296,7 +307,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(serviceOwner);
@@ -317,7 +329,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(stranger);
@@ -339,7 +352,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         uint256 calls = 10;
@@ -364,7 +378,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(gateway);
@@ -386,7 +401,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         vm.prank(stranger);
@@ -418,7 +434,8 @@ contract ServiceRegistryTest is BaseTest {
             "Service One",
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
         assertEq(registry.getServiceCount(), 1);
 
@@ -428,7 +445,8 @@ contract ServiceRegistryTest is BaseTest {
             "Service Two",
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.COMPUTE
+            IServiceRegistry.ServiceType.COMPUTE,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
         assertEq(registry.getServiceCount(), 2);
 
@@ -438,7 +456,8 @@ contract ServiceRegistryTest is BaseTest {
             "Service Three",
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.AGENT
+            IServiceRegistry.ServiceType.AGENT,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
         assertEq(registry.getServiceCount(), 3);
 
@@ -450,8 +469,8 @@ contract ServiceRegistryTest is BaseTest {
         bytes32 id2 = keccak256("svc-2");
 
         vm.startPrank(serviceOwner);
-        registry.registerService(id1, agentId, "Service 1", PRICE_PER_CALL, ENDPOINT, IServiceRegistry.ServiceType.API);
-        registry.registerService(id2, agentId, "Service 2", PRICE_PER_CALL, ENDPOINT, IServiceRegistry.ServiceType.STORAGE);
+        registry.registerService(id1, agentId, "Service 1", PRICE_PER_CALL, ENDPOINT, IServiceRegistry.ServiceType.API, IServiceRegistry.PaymentMode.PROXY_WRAPPED);
+        registry.registerService(id2, agentId, "Service 2", PRICE_PER_CALL, ENDPOINT, IServiceRegistry.ServiceType.STORAGE, IServiceRegistry.PaymentMode.PROXY_WRAPPED);
         vm.stopPrank();
 
         assertEq(registry.getServiceIdAt(0), id1);
@@ -520,7 +539,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         // Recorder calls recordUsage
@@ -547,7 +567,8 @@ contract ServiceRegistryTest is BaseTest {
             SERVICE_NAME,
             PRICE_PER_CALL,
             ENDPOINT,
-            IServiceRegistry.ServiceType.API
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
         );
 
         // Gateway still works
@@ -562,5 +583,106 @@ contract ServiceRegistryTest is BaseTest {
         IServiceRegistry.Service memory svc = registry.getService(SERVICE_ID);
         assertEq(svc.totalCalls, 8);
         assertEq(svc.totalRevenue, 8000);
+    }
+
+    // ==================== PaymentMode enum tests ====================
+
+    /// @notice registerService stores PROXY_WRAPPED payment mode
+    function test_RegisterService_PaymentModeProxyWrapped() public {
+        bytes32 svcId = keccak256("proxy-wrapped-svc");
+
+        vm.prank(serviceOwner);
+        registry.registerService(
+            svcId,
+            agentId,
+            "Proxy Wrapped Service",
+            PRICE_PER_CALL,
+            ENDPOINT,
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
+        );
+
+        IServiceRegistry.Service memory svc = registry.getService(svcId);
+        assertEq(uint256(svc.paymentMode), uint256(IServiceRegistry.PaymentMode.PROXY_WRAPPED));
+    }
+
+    /// @notice registerService stores NATIVE_X402 payment mode
+    function test_RegisterService_PaymentModeNativeX402() public {
+        bytes32 svcId = keccak256("native-x402-svc");
+
+        vm.prank(serviceOwner);
+        registry.registerService(
+            svcId,
+            agentId,
+            "Native X402 Service",
+            PRICE_PER_CALL,
+            ENDPOINT,
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.NATIVE_X402
+        );
+
+        IServiceRegistry.Service memory svc = registry.getService(svcId);
+        assertEq(uint256(svc.paymentMode), uint256(IServiceRegistry.PaymentMode.NATIVE_X402));
+    }
+
+    /// @notice getService returns correct payment mode
+    function test_GetService_ReturnsPaymentMode() public {
+        bytes32 svcId1 = keccak256("svc-proxy");
+        bytes32 svcId2 = keccak256("svc-native");
+
+        vm.startPrank(serviceOwner);
+        registry.registerService(
+            svcId1,
+            agentId,
+            "Proxy Service",
+            PRICE_PER_CALL,
+            ENDPOINT,
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.PROXY_WRAPPED
+        );
+        registry.registerService(
+            svcId2,
+            agentId,
+            "Native Service",
+            PRICE_PER_CALL,
+            ENDPOINT,
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.NATIVE_X402
+        );
+        vm.stopPrank();
+
+        IServiceRegistry.Service memory svc1 = registry.getService(svcId1);
+        IServiceRegistry.Service memory svc2 = registry.getService(svcId2);
+
+        assertEq(uint256(svc1.paymentMode), 0, "PROXY_WRAPPED should be 0");
+        assertEq(uint256(svc2.paymentMode), 1, "NATIVE_X402 should be 1");
+    }
+
+    /// @notice ServiceRegistered event includes payment mode
+    function test_RegisterService_EmitsPaymentModeInEvent() public {
+        bytes32 svcId = keccak256("event-test-svc");
+        address agentWallet = identityRegistry.getAgentWallet(agentId);
+
+        vm.prank(serviceOwner);
+        vm.expectEmit(true, true, false, true);
+        emit IServiceRegistry.ServiceRegistered(
+            svcId,
+            agentId,
+            agentWallet,
+            "Event Test Service",
+            PRICE_PER_CALL,
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.NATIVE_X402
+        );
+
+        registry.registerService(
+            svcId,
+            agentId,
+            "Event Test Service",
+            PRICE_PER_CALL,
+            ENDPOINT,
+            IServiceRegistry.ServiceType.API,
+            IServiceRegistry.PaymentMode.NATIVE_X402
+        );
     }
 }

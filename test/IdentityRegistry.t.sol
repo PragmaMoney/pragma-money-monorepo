@@ -182,4 +182,165 @@ contract IdentityRegistryTest is BaseTest {
         assertTrue(_contains(json, "\"services\""));
         assertTrue(_contains(json, "\"x402Support\""));
     }
+
+    // ==================== setFundingConfig / getFundingConfig ====================
+
+    /// @notice owner can set funding config
+    function test_setFundingConfig_asOwner() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, true, 4000);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 4000);
+    }
+
+    /// @notice agent wallet can set funding config
+    function test_setFundingConfig_asAgentWallet() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        // Set a different wallet using signature
+        uint256 walletPk = 0xA11CE;
+        address walletAddr = vm.addr(walletPk);
+        uint256 deadline = block.timestamp + 5 minutes;
+        bytes32 digest = _digest(address(id), agentId, walletAddr, agentOwner, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(walletPk, digest);
+        bytes memory sig = abi.encodePacked(r, s, v);
+
+        vm.prank(agentOwner);
+        id.setAgentWallet(agentId, walletAddr, deadline, sig);
+
+        // Wallet can now set funding config
+        vm.prank(walletAddr);
+        id.setFundingConfig(agentId, true, 3000);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 3000);
+    }
+
+    /// @notice approved address can set funding config
+    function test_setFundingConfig_asApproved() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        id.approve(bob, agentId);
+
+        vm.prank(bob);
+        id.setFundingConfig(agentId, true, 5000);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 5000);
+    }
+
+    /// @notice unauthorized address cannot set funding config
+    function test_setFundingConfig_revertsUnauthorized() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(bob);
+        vm.expectRevert("Not authorized");
+        id.setFundingConfig(agentId, true, 4000);
+    }
+
+    /// @notice reverts when splitRatio exceeds 10000
+    function test_setFundingConfig_revertsInvalidRatio() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        vm.expectRevert("Invalid ratio");
+        id.setFundingConfig(agentId, true, 10001);
+    }
+
+    /// @notice setFundingConfig sets values correctly
+    function test_setFundingConfig_setsValues() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, true, 4000);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 4000);
+
+        // Update to different values
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, false, 0);
+
+        (needsFunding, splitRatio) = id.getFundingConfig(agentId);
+        assertFalse(needsFunding);
+        assertEq(splitRatio, 0);
+    }
+
+    /// @notice setFundingConfig updates existing values
+    function test_setFundingConfig_updatesExisting() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, true, 4000);
+
+        // Update to new values
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, true, 6000);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 6000);
+    }
+
+    /// @notice getFundingConfig returns defaults for new agent
+    function test_getFundingConfig_defaultValues() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertFalse(needsFunding);
+        assertEq(splitRatio, 0);
+    }
+
+    /// @notice setFundingConfig emits event
+    function test_setFundingConfig_emitsEvent() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        vm.expectEmit(true, false, false, true);
+        emit IIdentityRegistry.FundingConfigUpdated(agentId, true, 4000);
+        id.setFundingConfig(agentId, true, 4000);
+    }
+
+    /// @notice splitRatio can be zero
+    function test_setFundingConfig_zeroRatio() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, true, 0);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 0);
+    }
+
+    /// @notice splitRatio can be max (100%)
+    function test_setFundingConfig_maxRatio() public {
+        vm.prank(agentOwner);
+        uint256 agentId = id.register("file://metadata/agent-1.json");
+
+        vm.prank(agentOwner);
+        id.setFundingConfig(agentId, true, 10000);
+
+        (bool needsFunding, uint16 splitRatio) = id.getFundingConfig(agentId);
+        assertTrue(needsFunding);
+        assertEq(splitRatio, 10000);
+    }
 }
