@@ -69,7 +69,8 @@ async function handleFacilitatorCall(
 ): Promise<string> {
   const walletData = loadOrCreateWallet();
   const account = privateKeyToAccount(walletData.privateKey as `0x${string}`);
-  const url = `${proxyUrl}/proxy/${input.serviceId}`;
+  // Use direct endpoint for NATIVE_X402 services, proxy for PROXY_WRAPPED
+  const url = input.endpoint ?? `${proxyUrl}/proxy/${input.serviceId}`;
 
   // Step 1: Make initial request to get 402 with payment requirements
   const initialResponse = await fetch(url, {
@@ -254,6 +255,8 @@ export interface CallInput {
   calls?: number;
   /** Proxy base URL. Defaults to http://localhost:4402 */
   proxyUrl?: string;
+  /** Direct endpoint URL for NATIVE_X402 services (bypasses proxy) */
+  endpoint?: string;
   /** Optional: additional HTTP headers as a JSON object. */
   headers?: Record<string, string>;
   /** Optional: override RPC URL */

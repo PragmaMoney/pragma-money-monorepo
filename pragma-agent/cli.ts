@@ -271,6 +271,7 @@ Environment:
         ...(getFlag(args, "body") !== undefined && { body: getFlag(args, "body") }),
         ...(getFlagNum(args, "calls") !== undefined && { calls: getFlagNum(args, "calls") }),
         ...(getFlag(args, "proxy-url") !== undefined && { proxyUrl: getFlag(args, "proxy-url") }),
+        ...(getFlag(args, "endpoint") !== undefined && { endpoint: getFlag(args, "endpoint") }),
         ...(getFlag(args, "rpc-url") !== undefined && { rpcUrl: getFlag(args, "rpc-url") }),
         ...(useFacilitator && { useFacilitator: true }),
       };
