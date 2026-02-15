@@ -7,13 +7,13 @@ export const DEFAULT_PROXY_URL = "http://localhost:4402";
 export const USDC_ADDRESS = "0x534b2f3A21130d7a60830c2Df862319e593943A3";
 export const REPUTATION_REPORTER_ADDRESS =
   process.env.REPUTATION_REPORTER_ADDRESS ||
-  "0x2E3A2591561329ED54C88A84aD95E21e6192a907";
-export const SERVICE_REGISTRY_ADDRESS = "0xCd5792dDdd3A7b98221223EFE5aCbC302a20A76e";
-export const X402_GATEWAY_ADDRESS = "0x8887dD91C983b2c647a41DEce32c34E79c7C33df";
+  "0x8F10B8537907692d36E078f23525FAFF2756c5ab";
+export const SERVICE_REGISTRY_ADDRESS = "0x7fc78b9769CF0739a5AC2a12D6BfCb121De12A59";
+export const X402_GATEWAY_ADDRESS = "0x76f3a9aE46D58761f073a8686Eb60194B1917E27";
 export const IDENTITY_REGISTRY_ADDRESS = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
-export const AGENT_ACCOUNT_FACTORY_ADDRESS = "0x84277eA30ec0a43ED362904308C0A72bF5269196";
-export const AGENT_POOL_FACTORY_ADDRESS = "0xF6CA25ebA2Dc010d19507D2C6138ba2598B7b974";
-export const SCORE_ORACLE_ADDRESS = "0xE36fa05D875B2475C671A8d5F47421365CE46874";
+export const AGENT_ACCOUNT_FACTORY_ADDRESS = "0x77F3195CE8E69A76345dBfe5cdAa998a59dE99f5";
+export const AGENT_POOL_FACTORY_ADDRESS = "0x42C7A12EA8AcD87367D1d52cb6a6ad6Ca306e9C0";
+export const SCORE_ORACLE_ADDRESS = "0x3742386807D4D0584193695A33fC984154E84C47";
 
 // ─── 4337 / Pimlico ──────────────────────────────────────────────────────────
 
@@ -54,14 +54,20 @@ export const REPUTATION_REPORTER_ABI = [
 
 export const SERVICE_REGISTRY_ABI = [
   // Read service data
-  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, bool active, uint256 totalCalls, uint256 totalRevenue))",
+  "function getService(bytes32 serviceId) view returns (tuple(uint256 agentId, address owner, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, uint8 fundingModel, bool active, uint256 totalCalls, uint256 totalRevenue))",
   "function getAgentId(bytes32 serviceId) view returns (uint256)",
   "function getServiceCount() view returns (uint256)",
   "function getServiceIdAt(uint256 index) view returns (bytes32)",
   // Write
-  "function registerService(bytes32 serviceId, uint256 agentId, string name, uint256 pricePerCall, string endpoint, uint8 serviceType)",
+  "function registerService(bytes32 serviceId, uint256 agentId, string name, uint256 pricePerCall, string endpoint, uint8 serviceType, uint8 fundingModel)",
   "function recordUsage(bytes32 serviceId, uint256 calls, uint256 revenue)",
 ] as const;
+
+// FundingModel enum values (matches IServiceRegistry.FundingModel)
+export const FUNDING_MODEL = {
+  PROXY_WRAPPED: 0,
+  NATIVE_X402: 1,
+} as const;
 
 export const X402_GATEWAY_ABI = [
   "function payForService(bytes32 serviceId, uint256 calls) returns (bytes32 paymentId)",

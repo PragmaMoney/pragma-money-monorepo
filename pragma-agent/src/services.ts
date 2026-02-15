@@ -80,6 +80,12 @@ export interface ServicesInput {
   endpoint?: string;
   /** Optional for 'register' action: service type (default: API) */
   serviceType?: string;
+  /** Optional for 'register' action: payment mode (PROXY_WRAPPED or NATIVE_X402) */
+  paymentMode?: "PROXY_WRAPPED" | "NATIVE_X402";
+  /** Optional: JSON Schema defining expected input format for agent interoperability */
+  inputSchema?: string;
+  /** Optional: JSON Schema defining output format for agent interoperability */
+  outputSchema?: string;
   /** Optional: override relayer URL */
   relayerUrl?: string;
   /** Optional: override RPC URL */
@@ -195,6 +201,13 @@ export async function handleServices(input: ServicesInput): Promise<string> {
         };
         const serviceTypeNum = typeMap[(input.serviceType ?? "API").toUpperCase()] ?? 2;
 
+        // Map payment mode string to uint8
+        const paymentModeMap: Record<string, number> = {
+          PROXY_WRAPPED: 0,
+          NATIVE_X402: 1,
+        };
+        const paymentModeNum = paymentModeMap[(input.paymentMode ?? "PROXY_WRAPPED").toUpperCase()] ?? 0;
+
         // Generate serviceId = keccak256(name-slug-timestamp)
         const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
         const serviceId = keccak256(toUtf8Bytes(`${slug}-${Date.now()}`)) as `0x${string}`;
@@ -214,6 +227,7 @@ export async function handleServices(input: ServicesInput): Promise<string> {
           priceAtomic,
           proxyEndpoint,
           serviceTypeNum,
+          paymentModeNum,
         );
 
         const result = await sendUserOp(
@@ -237,7 +251,15 @@ export async function handleServices(input: ServicesInput): Promise<string> {
           const proxyRes = await fetch(`${relayerUrl}/register-service`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ serviceId, originalUrl: input.endpoint }),
+            body: JSON.stringify({
+              serviceId,
+              originalUrl: input.endpoint,
+              paymentMode: input.paymentMode ?? "PROXY_WRAPPED",
+              schema: {
+                input: input.inputSchema ? JSON.parse(input.inputSchema) : null,
+                output: input.outputSchema ? JSON.parse(input.outputSchema) : null,
+              },
+            }),
           });
           const proxyJson = await proxyRes.json() as { proxyUrl?: string };
           if (proxyJson.proxyUrl) {
@@ -253,6 +275,11 @@ export async function handleServices(input: ServicesInput): Promise<string> {
           pricePerCall: input.pricePerCall,
           endpoint: input.endpoint,
           serviceType: input.serviceType ?? "API",
+          paymentMode: input.paymentMode ?? "PROXY_WRAPPED",
+          schema: {
+            input: input.inputSchema ? JSON.parse(input.inputSchema) : null,
+            output: input.outputSchema ? JSON.parse(input.outputSchema) : null,
+          },
           proxyUrl,
           txHash: result.txHash,
           userOpHash: result.userOpHash,
@@ -314,6 +341,16 @@ export const servicesSchema = {
         enum: ["COMPUTE", "STORAGE", "API", "AGENT", "OTHER"],
         description:
           "Service type category. Optional for 'register' (default: API).",
+      },
+      inputSchema: {
+        type: "string" as const,
+        description:
+          "JSON Schema defining expected input format. Optional for agent interoperability.",
+      },
+      outputSchema: {
+        type: "string" as const,
+        description:
+          "JSON Schema defining output format. Optional for agent interoperability.",
       },
       relayerUrl: {
         type: "string" as const,

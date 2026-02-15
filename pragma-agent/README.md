@@ -207,8 +207,8 @@ Delete this file to reset and re-register.
 |----------|---------|
 | USDC | `0x534b2f3A21130d7a60830c2Df862319e593943A3` |
 | IdentityRegistry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
-| AgentAccountFactory | `0x84277eA30ec0a43ED362904308C0A72bF5269196` |
-| AgentFactory (pools) | `0x2Cd3c8D045b29B1baC914722D85419964DBD79B7` |
-| ServiceRegistry | `0xCd5792dDdd3A7b98221223EFE5aCbC302a20A76e` |
-| x402Gateway | `0x8887dD91C983b2c647a41DEce32c34E79c7C33df` |
+| AgentAccountFactory | `0xfDF46FBbB9c72dd2cD1d08ef98b01925dbae6201` |
+| AgentFactory (pools) | `0xaa90870789A50f323840c2F62E18c3ba100bC2ab` |
+| ServiceRegistry | `0xe0C01673E46dc48F958364c58263D72863686263` |
+| x402Gateway | `0x49Cb6Ed53c8F8125Ea3a9993c142426124B7C9c9` |
 | EntryPoint (v0.7) | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |

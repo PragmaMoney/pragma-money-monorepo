@@ -12,6 +12,9 @@
     "start": "node dist/cli.js"
   },
   "dependencies": {
+    "@x402/core": "^2.2.0",
+    "@x402/evm": "^2.2.0",
+    "@x402/fetch": "^2.2.0",
     "dotenv": "^16.6.1",
     "ethers": "^6.0.0",
     "permissionless": "^0.2.57",

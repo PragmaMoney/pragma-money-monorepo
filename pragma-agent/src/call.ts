@@ -1,4 +1,6 @@
 import { Contract, formatUnits, JsonRpcProvider } from "ethers";
+import { privateKeyToAccount } from "viem/accounts";
+import { keccak256, toHex, type Hex } from "viem";
 import {
   RPC_URL,
   USDC_ADDRESS,
@@ -9,9 +11,234 @@ import {
   SERVICE_REGISTRY_ADDRESS,
   SERVICE_REGISTRY_ABI,
   DEFAULT_PROXY_URL,
+  CHAIN_ID,
 } from "./config.js";
 import { loadOrCreateWallet, requireRegistration } from "./wallet.js";
 import { sendUserOp, buildApproveCall, buildPayForServiceCall } from "./userop.js";
+
+// ─── x402 Facilitator Constants ─────────────────────────────────────────────
+
+const MONAD_NETWORK = "eip155:10143" as const;
+
+// EIP-712 domain for Monad USDC TransferWithAuthorization
+const USDC_DOMAIN = {
+  name: "USDC",
+  version: "2",
+  chainId: BigInt(CHAIN_ID),
+  verifyingContract: USDC_ADDRESS as `0x${string}`,
+} as const;
+
+// EIP-712 types for TransferWithAuthorization (ERC-3009)
+const TRANSFER_WITH_AUTHORIZATION_TYPES = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+} as const;
+
+// ─── x402 Payment Requirements Type ─────────────────────────────────────────
+
+interface X402PaymentRequired {
+  x402Version: number;
+  accepts: Array<{
+    scheme: string;
+    network: string;
+    amount: string;
+    payTo: string;
+    maxTimeoutSeconds: number;
+    asset: string;
+    extra?: { name: string; version: string };
+  }>;
+  resource: {
+    url: string;
+    description: string;
+    mimeType: string;
+  };
+}
+
+// ─── Facilitator Flow Handler ────────────────────────────────────────────────
+
+async function handleFacilitatorCall(
+  input: CallInput,
+  proxyUrl: string,
+  method: string
+): Promise<string> {
+  const walletData = loadOrCreateWallet();
+  const account = privateKeyToAccount(walletData.privateKey as `0x${string}`);
+  const url = `${proxyUrl}/proxy/${input.serviceId}`;
+
+  // Step 1: Make initial request to get 402 with payment requirements
+  const initialResponse = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: method === "POST" && input.body ? input.body : undefined,
+  });
+
+  // If not 402, the endpoint is free or already authenticated
+  if (initialResponse.status !== 402) {
+    const contentType = initialResponse.headers.get("content-type") ?? "";
+    let responseBody: string;
+    if (contentType.includes("application/json")) {
+      const json = await initialResponse.json();
+      responseBody = JSON.stringify(json);
+    } else {
+      responseBody = await initialResponse.text();
+    }
+
+    return JSON.stringify({
+      success: true,
+      action: "call",
+      serviceId: input.serviceId,
+      mode: "facilitator",
+      note: "Endpoint did not require payment (not 402)",
+      httpStatus: initialResponse.status,
+      response: responseBody,
+    });
+  }
+
+  // Step 2: Parse payment requirements from 402 response
+  const paymentRequiredHeader = initialResponse.headers.get("PAYMENT-REQUIRED");
+  if (!paymentRequiredHeader) {
+    return JSON.stringify({
+      error: "402 response missing PAYMENT-REQUIRED header",
+    });
+  }
+
+  let paymentRequired: X402PaymentRequired;
+  try {
+    const decoded = Buffer.from(paymentRequiredHeader, "base64").toString("utf-8");
+    paymentRequired = JSON.parse(decoded);
+  } catch {
+    // Try parsing as raw JSON
+    try {
+      paymentRequired = JSON.parse(paymentRequiredHeader);
+    } catch {
+      return JSON.stringify({
+        error: "Failed to parse PAYMENT-REQUIRED header",
+      });
+    }
+  }
+
+  if (!paymentRequired.accepts || paymentRequired.accepts.length === 0) {
+    return JSON.stringify({
+      error: "No payment options in PAYMENT-REQUIRED",
+    });
+  }
+
+  const accepted = paymentRequired.accepts[0];
+
+  // Step 3: Build TransferWithAuthorization message
+  const now = Math.floor(Date.now() / 1000);
+  const nonce = keccak256(toHex(Math.random().toString())) as Hex;
+
+  const authorization = {
+    from: account.address,
+    to: accepted.payTo as `0x${string}`,
+    value: BigInt(accepted.amount),
+    validAfter: BigInt(now - 60), // 60s in past for clock skew
+    validBefore: BigInt(now + 900), // 15 minutes validity
+    nonce,
+  };
+
+  // Step 4: Sign EIP-712 TransferWithAuthorization
+  const signature = await account.signTypedData({
+    domain: USDC_DOMAIN,
+    types: TRANSFER_WITH_AUTHORIZATION_TYPES,
+    primaryType: "TransferWithAuthorization",
+    message: authorization,
+  });
+
+  // Step 5: Build x402 v2 payload
+  const x402Payload = {
+    x402Version: 2,
+    payload: {
+      authorization: {
+        from: authorization.from,
+        to: authorization.to,
+        value: authorization.value.toString(),
+        validAfter: authorization.validAfter.toString(),
+        validBefore: authorization.validBefore.toString(),
+        nonce: authorization.nonce,
+      },
+      signature,
+    },
+    resource: paymentRequired.resource,
+    accepted: accepted,
+  };
+
+  // Step 6: Send request with PAYMENT-SIGNATURE header
+  const paymentSignature = Buffer.from(JSON.stringify(x402Payload)).toString("base64");
+
+  const fetchHeaders: Record<string, string> = {
+    "PAYMENT-SIGNATURE": paymentSignature,
+    "Content-Type": "application/json",
+    ...(input.headers ?? {}),
+  };
+
+  const fetchOptions: RequestInit = {
+    method,
+    headers: fetchHeaders,
+  };
+
+  if (method === "POST" && input.body) {
+    fetchOptions.body = input.body;
+  }
+
+  const response = await fetch(url, fetchOptions);
+  const responseStatus = response.status;
+
+  // Parse response
+  let responseBody: string;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const json = await response.json();
+    responseBody = JSON.stringify(json);
+  } else {
+    responseBody = await response.text();
+  }
+
+  // Check for payment response header
+  const paymentResponseHeader = response.headers.get("PAYMENT-RESPONSE");
+  let paymentResponse: { success?: boolean; transaction?: string } | null = null;
+  if (paymentResponseHeader) {
+    try {
+      const decoded = Buffer.from(paymentResponseHeader, "base64").toString("utf-8");
+      paymentResponse = JSON.parse(decoded);
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  if (responseStatus !== 200) {
+    return JSON.stringify({
+      error: `Request failed with status ${responseStatus}`,
+      mode: "facilitator",
+      httpStatus: responseStatus,
+      response: responseBody,
+      paymentResponse,
+    });
+  }
+
+  return JSON.stringify({
+    success: true,
+    action: "call",
+    serviceId: input.serviceId,
+    mode: "facilitator",
+    payer: account.address,
+    payTo: accepted.payTo,
+    amount: formatUnits(BigInt(accepted.amount), USDC_DECIMALS),
+    network: accepted.network,
+    proxyUrl: url,
+    httpMethod: method,
+    httpStatus: responseStatus,
+    response: responseBody,
+    paymentResponse,
+  });
+}
 
 // ─── Tool handler ────────────────────────────────────────────────────────────
 
@@ -31,6 +258,8 @@ export interface CallInput {
   headers?: Record<string, string>;
   /** Optional: override RPC URL */
   rpcUrl?: string;
+  /** Use x402 facilitator flow instead of 4337 UserOp (Path A vs Path B) */
+  useFacilitator?: boolean;
 }
 
 export async function handleCall(input: CallInput): Promise<string> {
@@ -54,6 +283,11 @@ export async function handleCall(input: CallInput): Promise<string> {
 
     if (calls <= 0) {
       return JSON.stringify({ error: "calls must be a positive integer." });
+    }
+
+    // Route to facilitator flow if requested
+    if (input.useFacilitator) {
+      return handleFacilitatorCall(input, proxyUrl, method);
     }
 
     // Get registration (smart account) and wallet (operator private key)

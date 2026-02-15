@@ -82,10 +82,14 @@ const WALLET_FILE = getDefaultWalletPath();
 interface Registration {
   agentId: string;
   smartAccount: string;
-  poolAddress: string;
+  poolAddress?: string;
   owner: string;
   registeredAt: string;
   txHashes: Record<string, string>;
+  /** Whether agent needs investor funding (enables auto-split) */
+  needsFunding?: boolean;
+  /** Split ratio in basis points (e.g., 4000 = 40% to pool) */
+  splitRatio?: number;
 }
 
 interface WalletData {

@@ -173,6 +173,7 @@ const SERVICE_REGISTRY_ABI_VIEM = [
       { name: "pricePerCall", type: "uint256" },
       { name: "endpoint", type: "string" },
       { name: "serviceType", type: "uint8" },
+      { name: "paymentMode", type: "uint8" },
     ],
     name: "registerService",
     outputs: [],
@@ -667,6 +668,7 @@ export function buildPoolPullCall(
 
 /**
  * Build a ServiceRegistry.registerService call.
+ * @param paymentMode - 0 for PROXY_WRAPPED (proxy handles payment), 1 for NATIVE_X402 (service handles payment)
  */
 export function buildRegisterServiceCall(
   serviceId: `0x${string}`,
@@ -674,7 +676,8 @@ export function buildRegisterServiceCall(
   name: string,
   pricePerCall: bigint,
   endpoint: string,
-  serviceType: number
+  serviceType: number,
+  paymentMode: number = 0 // Default to PROXY_WRAPPED
 ): Call {
   return {
     to: SERVICE_REGISTRY_ADDRESS as `0x${string}`,
@@ -682,7 +685,7 @@ export function buildRegisterServiceCall(
     data: encodeFunctionData({
       abi: SERVICE_REGISTRY_ABI_VIEM,
       functionName: "registerService",
-      args: [serviceId, agentId, name, pricePerCall, endpoint, serviceType],
+      args: [serviceId, agentId, name, pricePerCall, endpoint, serviceType, paymentMode],
     }),
   };
 }

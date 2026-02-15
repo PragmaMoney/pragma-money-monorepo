@@ -75,6 +75,8 @@ async function main() {
       expiryDays: 90,
       poolDailyCap: "50",
       poolVestingDays: 30,
+      needsFunding: true,    // Enable auto-split to pool
+      splitRatio: 4000,      // 40% to pool, 60% to wallet
     }));
 
     if (regResult.error) {
@@ -86,6 +88,8 @@ async function main() {
       log("agentId", regResult.agentId);
       log("smartAccount", regResult.smartAccountAddress);
       log("pool", regResult.poolAddress);
+      log("needsFunding", regResult.needsFunding);
+      log("splitRatio", `${regResult.splitRatio} (${regResult.splitRatio / 100}% to pool)`);
       log("txHashes", regResult.txHashes);
     }
   }
@@ -187,6 +191,7 @@ async function main() {
         action: "pay",
         serviceId: svc.serviceId,
         calls: 1,
+        score: 85, // Reputation score (required)
       }));
       if (payResult.error) {
         log("Pay error (expected if no USDC)", payResult.error);

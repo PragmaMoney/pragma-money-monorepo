@@ -24,6 +24,10 @@ export interface RegisterInput {
   poolDailyCap: string;     // USDC, e.g. "50"
   poolVestingDays?: number; // default 30
   relayerUrl?: string;
+  /** Whether agent needs investor funding (enables auto-split). Default: true */
+  needsFunding?: boolean;
+  /** Split ratio in basis points (e.g., 4000 = 40% to pool). Default: 4000 */
+  splitRatio?: number;
 }
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
@@ -198,14 +202,20 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
     await new Promise((r) => setTimeout(r, 3000));
 
     // ─── Phase 3: POST /register-agent/finalize ────────────────────────────
-    // Proxy creates pool + allows pool as target (agentWallet is now set)
+    // Proxy creates pool + sets funding config (agentWallet is now set)
+    // Pool is always created; funding behavior depends on needsFunding/splitRatio
+
+    const needsFunding = input.needsFunding ?? true;  // default: needs funding
+    const splitRatio = input.splitRatio ?? 4000;      // default: 40%
 
     const finalizeBody = {
       operatorAddress: walletData.address,
       agentId,
+      needsFunding,
+      splitRatio,
     };
 
-    console.log(`[pragma-register] Phase 3: Requesting pool creation...`);
+    console.log(`[pragma-register] Phase 3: Creating pool (needsFunding=${needsFunding}, splitRatio=${splitRatio})...`);
     const finalizeRes = await fetch(`${relayerUrl}/register-agent/finalize`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -244,10 +254,12 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
     saveRegistration({
       agentId,
       smartAccount: setupData.smartAccountAddress,
-      poolAddress: finalizeData.poolAddress,
+      poolAddress: finalizeData.poolAddress || undefined,
       owner: walletData.address,
       registeredAt: new Date().toISOString(),
       txHashes: allTxHashes,
+      needsFunding,
+      splitRatio,
     });
 
     console.log(`[pragma-register] Registration complete!`);
@@ -256,7 +268,9 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
       success: true,
       agentId,
       smartAccountAddress: setupData.smartAccountAddress,
-      poolAddress: finalizeData.poolAddress,
+      poolAddress: finalizeData.poolAddress || null,
+      needsFunding,
+      splitRatio,
       operatorAddress: walletData.address,
       owner: walletData.address,
       txHashes: allTxHashes,
@@ -272,7 +286,7 @@ export async function handleRegister(input: RegisterInput): Promise<string> {
 export const registerSchema = {
   name: "pragma-register",
   description:
-    "Register the agent on PragmaMoney. Creates on-chain identity (NFT owned by agent), deploys a policy-enforced smart wallet (ERC-4337), binds it, and creates an investor funding pool. Must be called before using pragma-pay, pragma-pool, or pragma-call.",
+    "Register the agent on PragmaMoney. Creates on-chain identity (NFT owned by agent), deploys a policy-enforced smart wallet (ERC-4337), binds it, and creates an investor funding pool. Use needsFunding=true (default) for auto-split of revenue, or needsFunding=false for self-funded agents.",
   input_schema: {
     type: "object" as const,
     properties: {
@@ -312,6 +326,14 @@ export const registerSchema = {
       relayerUrl: {
         type: "string" as const,
         description: "Relayer URL override. Defaults to proxy URL.",
+      },
+      needsFunding: {
+        type: "boolean" as const,
+        description: "Whether agent needs investor funding. If true (default), revenue is auto-split. If false, 100% goes to wallet.",
+      },
+      splitRatio: {
+        type: "number" as const,
+        description: "Split ratio in basis points (e.g., 4000 = 40% to pool). Defaults to 4000.",
       },
     },
     required: ["action", "name", "endpoint", "dailyLimit", "expiryDays", "poolDailyCap"],

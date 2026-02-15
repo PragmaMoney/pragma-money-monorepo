@@ -4,9 +4,9 @@
  * pragma-agent CLI
  *
  * Usage:
- *   pragma-agent register --name "X" --endpoint "https://..." --daily-limit 100 --expiry-days 90 --pool-daily-cap 50
+ *   pragma-agent register --name "X" --endpoint "https://..." --daily-limit 100 --expiry-days 90 --pool-daily-cap 50 [--needs-funding true|false] [--split-ratio 4000]
  *   pragma-agent wallet [balance|address|policy]
- *   pragma-agent services [list|get --service-id 0x...|search --query "keyword"]
+ *   pragma-agent services [list|get --service-id 0x...|search --query "keyword"|register --name "X" --price 0.001 --endpoint "https://..." [--payment-mode PROXY_WRAPPED|NATIVE_X402]]
  *   pragma-agent pool [info|remaining|pull --amount 5.00|invest --target-agent-id 42 --amount 1.00]
  *   pragma-agent pay [pay --service-id 0x... --calls 1|verify --payment-id 0x...]
  *   pragma-agent call --service-id 0x... [--method POST] [--body '{"key":"val"}']
@@ -64,17 +64,22 @@ Commands:
 
 Examples:
   pragma-agent register --name "MyAgent" --endpoint "https://myagent.com" --daily-limit 100 --expiry-days 90 --pool-daily-cap 50
+  pragma-agent register --name "MyAgent" --endpoint "https://myagent.com" --daily-limit 100 --expiry-days 90 --pool-daily-cap 50 --needs-funding false
+  pragma-agent register --name "MyAgent" --endpoint "https://myagent.com" --daily-limit 100 --expiry-days 90 --pool-daily-cap 50 --split-ratio 3000
   pragma-agent wallet balance
   pragma-agent wallet policy
   pragma-agent services list
   pragma-agent services get --service-id 0x...
   pragma-agent services register --name "My API" --price 0.001 --endpoint "https://api.example.com" --type API
+  pragma-agent services register --name "My API" --price 0.001 --endpoint "https://api.example.com" --payment-mode NATIVE_X402
+  pragma-agent services register --name "My API" --price 0.001 --endpoint "https://api.example.com" --input-schema '{"type":"object","properties":{"prompt":{"type":"string"}}}' --output-schema '{"type":"object","properties":{"result":{"type":"string"}}}'
   pragma-agent pool remaining
   pragma-agent pool pull --amount 5.00
   pragma-agent pool invest --target-agent-id 42 --amount 1.00
   pragma-agent pay pay --service-id 0x... --calls 1
   pragma-agent pay verify --payment-id 0x...
   pragma-agent call --service-id 0x... --method POST --body '{"key":"val"}'
+  pragma-agent call --service-id 0x... --use-facilitator  # EOA pays via x402 facilitator (Path A)
 
 Environment:
   BUNDLER_URL          Bundler URL (required for UserOps)
@@ -102,6 +107,14 @@ Environment:
       const poolVestingDays = getFlagNum(args, "pool-vesting-days");
       const relayerUrl = getFlag(args, "relayer-url");
       const description = getFlag(args, "description");
+      const needsFundingFlag = getFlag(args, "needs-funding");
+      const splitRatio = getFlagNum(args, "split-ratio");
+
+      // Parse needsFunding flag (default: true)
+      let needsFunding: boolean | undefined;
+      if (needsFundingFlag !== undefined) {
+        needsFunding = needsFundingFlag.toLowerCase() === "true";
+      }
 
       if (!name || !endpoint || !dailyLimit || expiryDays === undefined || !poolDailyCap) {
         console.error(JSON.stringify({
@@ -120,6 +133,8 @@ Environment:
         ...(description !== undefined && { description }),
         ...(poolVestingDays !== undefined && { poolVestingDays }),
         ...(relayerUrl !== undefined && { relayerUrl }),
+        ...(needsFunding !== undefined && { needsFunding }),
+        ...(splitRatio !== undefined && { splitRatio }),
       };
       result = await handleRegister(input);
       break;
@@ -163,6 +178,14 @@ Environment:
         process.exit(1);
       }
 
+      const servicePaymentMode = getFlag(args, "payment-mode") as "PROXY_WRAPPED" | "NATIVE_X402" | undefined;
+      if (servicePaymentMode && servicePaymentMode !== "PROXY_WRAPPED" && servicePaymentMode !== "NATIVE_X402") {
+        console.error(JSON.stringify({
+          error: `Invalid --payment-mode: ${servicePaymentMode}. Valid: PROXY_WRAPPED, NATIVE_X402`,
+        }));
+        process.exit(1);
+      }
+
       const input: ServicesInput = {
         action,
         ...(getFlag(args, "service-id") !== undefined && { serviceId: getFlag(args, "service-id") }),
@@ -171,6 +194,9 @@ Environment:
         ...(getFlag(args, "price") !== undefined && { pricePerCall: getFlag(args, "price") }),
         ...(getFlag(args, "endpoint") !== undefined && { endpoint: getFlag(args, "endpoint") }),
         ...(getFlag(args, "type") !== undefined && { serviceType: getFlag(args, "type") }),
+        ...(servicePaymentMode !== undefined && { paymentMode: servicePaymentMode }),
+        ...(getFlag(args, "input-schema") !== undefined && { inputSchema: getFlag(args, "input-schema") }),
+        ...(getFlag(args, "output-schema") !== undefined && { outputSchema: getFlag(args, "output-schema") }),
         ...(getFlag(args, "relayer-url") !== undefined && { relayerUrl: getFlag(args, "relayer-url") }),
         ...(getFlag(args, "rpc-url") !== undefined && { rpcUrl: getFlag(args, "rpc-url") }),
       };
@@ -236,6 +262,8 @@ Environment:
         process.exit(1);
       }
 
+      const useFacilitator = args.includes("--use-facilitator");
+
       const input: CallInput = {
         action: "call",
         serviceId,
@@ -244,6 +272,7 @@ Environment:
         ...(getFlagNum(args, "calls") !== undefined && { calls: getFlagNum(args, "calls") }),
         ...(getFlag(args, "proxy-url") !== undefined && { proxyUrl: getFlag(args, "proxy-url") }),
         ...(getFlag(args, "rpc-url") !== undefined && { rpcUrl: getFlag(args, "rpc-url") }),
+        ...(useFacilitator && { useFacilitator: true }),
       };
       result = await handleCall(input);
       break;

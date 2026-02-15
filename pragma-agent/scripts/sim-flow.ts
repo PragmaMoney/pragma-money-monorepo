@@ -76,6 +76,8 @@ type Registration = {
   owner: string;
   registeredAt: string;
   txHashes: Record<string, string>;
+  needsFunding: boolean;
+  splitRatio: number;
 };
 
 type LogEntry = {
@@ -264,7 +266,10 @@ async function registerAgentViaProxy(
   walletData: WalletRecord,
   name: string,
   provider: JsonRpcProvider,
+  options: { needsFunding?: boolean; splitRatio?: number } = {},
 ): Promise<Registration> {
+  const needsFunding = options.needsFunding ?? true;
+  const splitRatio = options.splitRatio ?? 4000; // 40% to pool by default
   const operatorAddress = walletData.address;
 
   const fundRes = await fetch(`${RELAYER_URL}/register-agent/fund`, {
@@ -363,7 +368,7 @@ async function registerAgentViaProxy(
   const finalRes = await fetch(`${RELAYER_URL}/register-agent/finalize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ operatorAddress, agentId }),
+    body: JSON.stringify({ operatorAddress, agentId, needsFunding, splitRatio }),
   });
   const finalJson = (await finalRes.json()) as { error?: string; poolAddress?: string };
   if (finalJson.error) throw new Error(`Finalize failed: ${finalJson.error}`);
@@ -379,6 +384,8 @@ async function registerAgentViaProxy(
       register: regTx.hash,
       setWallet: setWalletTx.hash,
     },
+    needsFunding,
+    splitRatio,
   };
 }
 
@@ -443,7 +450,11 @@ async function stepRegister(state: FlowState, provider: JsonRpcProvider) {
   assert(state.walletA && state.walletB, "Run init step first");
 
   if (!state.regA) {
-    state.regA = await registerAgentViaProxy(state.walletA, "Sim-Agent-A", provider);
+    // Agent A: funded agent (40% to pool by default)
+    state.regA = await registerAgentViaProxy(state.walletA, "Sim-Agent-A", provider, {
+      needsFunding: true,
+      splitRatio: 4000, // 40% to pool
+    });
     const poolTxA = await findPoolCreatedTxHash(provider, state.regA.agentId, state.regA.poolAddress);
     state.txHashes = {
       ...(state.txHashes ?? {}),
@@ -454,15 +465,19 @@ async function stepRegister(state: FlowState, provider: JsonRpcProvider) {
     addLog(state, `Agent A registered: agentId ${state.regA.agentId}.`);
     addLog(state, `Agent A smart account: ${state.regA.smartAccount}.`);
     addLog(state, `Agent A pool: ${state.regA.poolAddress}.`);
+    addLog(state, `Agent A needsFunding: ${state.regA.needsFunding} (splitRatio: ${state.regA.splitRatio / 100}% to pool).`);
     addLog(state, `Agent A register tx: ${state.regA.txHashes.register}.`);
     addLog(state, `Agent A setWallet tx: ${state.regA.txHashes.setWallet}.`);
     if (poolTxA) {
       addLog(state, `Agent A pool created tx: ${poolTxA}.`);
-    } else {
     }
   }
   if (!state.regB) {
-    state.regB = await registerAgentViaProxy(state.walletB, "Sim-Agent-B", provider);
+    // Agent B: also funded agent, will receive payments and split revenue
+    state.regB = await registerAgentViaProxy(state.walletB, "Sim-Agent-B", provider, {
+      needsFunding: true,
+      splitRatio: 4000, // 40% to pool
+    });
     const poolTxB = await findPoolCreatedTxHash(provider, state.regB.agentId, state.regB.poolAddress);
     state.txHashes = {
       ...(state.txHashes ?? {}),
@@ -473,11 +488,11 @@ async function stepRegister(state: FlowState, provider: JsonRpcProvider) {
     addLog(state, `Agent B registered: agentId ${state.regB.agentId}.`);
     addLog(state, `Agent B smart account: ${state.regB.smartAccount}.`);
     addLog(state, `Agent B pool: ${state.regB.poolAddress}.`);
+    addLog(state, `Agent B needsFunding: ${state.regB.needsFunding} (splitRatio: ${state.regB.splitRatio / 100}% to pool).`);
     addLog(state, `Agent B register tx: ${state.regB.txHashes.register}.`);
     addLog(state, `Agent B setWallet tx: ${state.regB.txHashes.setWallet}.`);
     if (poolTxB) {
       addLog(state, `Agent B pool created tx: ${poolTxB}.`);
-    } else {
     }
   }
 }
@@ -673,7 +688,16 @@ async function stepRegisterService(state: FlowState) {
 }
 
 async function stepPay(state: FlowState, provider: JsonRpcProvider) {
-  assert(state.regA && state.walletA && state.service, "Run register-service step first");
+  assert(state.regA && state.regB && state.walletA && state.service, "Run register-service step first");
+
+  const usdc = new Contract(USDC_ADDRESS, ERC20_ABI, provider);
+  const poolB = new Contract(state.regB.poolAddress, AGENT_POOL_ABI, provider);
+
+  // Track balances BEFORE payment for split verification
+  const poolBAssetsBefore: bigint = await poolB.totalAssets();
+  const agentBWalletBefore: bigint = await usdc.balanceOf(state.regB.smartAccount);
+  addLog(state, `PRE-PAYMENT: Agent B pool assets: ${formatUnits(poolBAssetsBefore, USDC_DECIMALS)} USDC.`);
+  addLog(state, `PRE-PAYMENT: Agent B wallet USDC: ${formatUnits(agentBWalletBefore, USDC_DECIMALS)} USDC.`);
 
   const payJson = await handlePayWith(
     {
@@ -720,6 +744,51 @@ async function stepPay(state: FlowState, provider: JsonRpcProvider) {
   if (!svc.active) {
     throw new Error("Service not active after payment");
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // REVENUE SPLIT VERIFICATION
+  // ═══════════════════════════════════════════════════════════════════════════
+  addLog(state, `--- REVENUE SPLIT VERIFICATION ---`);
+
+  const poolBAssetsAfter: bigint = await poolB.totalAssets();
+  const agentBWalletAfter: bigint = await usdc.balanceOf(state.regB.smartAccount);
+
+  const poolBDelta = poolBAssetsAfter - poolBAssetsBefore;
+  const walletBDelta = agentBWalletAfter - agentBWalletBefore;
+  const totalReceived = poolBDelta + walletBDelta;
+
+  addLog(state, `POST-PAYMENT: Agent B pool assets: ${formatUnits(poolBAssetsAfter, USDC_DECIMALS)} USDC.`);
+  addLog(state, `POST-PAYMENT: Agent B wallet USDC: ${formatUnits(agentBWalletAfter, USDC_DECIMALS)} USDC.`);
+  addLog(state, `Pool B delta: +${formatUnits(poolBDelta, USDC_DECIMALS)} USDC.`);
+  addLog(state, `Wallet B delta: +${formatUnits(walletBDelta, USDC_DECIMALS)} USDC.`);
+  addLog(state, `Total received: ${formatUnits(totalReceived, USDC_DECIMALS)} USDC.`);
+
+  // Verify split ratio (Agent B has needsFunding=true, splitRatio=4000 = 40% to pool)
+  const expectedSplitRatio = state.regB.splitRatio; // 4000 = 40%
+  const expectedPoolShare = (totalReceived * BigInt(expectedSplitRatio)) / 10000n;
+  const expectedWalletShare = totalReceived - expectedPoolShare;
+
+  addLog(state, `Expected split (${expectedSplitRatio / 100}% to pool):`);
+  addLog(state, `  - Pool should receive: ~${formatUnits(expectedPoolShare, USDC_DECIMALS)} USDC`);
+  addLog(state, `  - Wallet should receive: ~${formatUnits(expectedWalletShare, USDC_DECIMALS)} USDC`);
+
+  // Allow for small rounding differences (1 wei tolerance)
+  const poolDiff = poolBDelta > expectedPoolShare ? poolBDelta - expectedPoolShare : expectedPoolShare - poolBDelta;
+  const walletDiff = walletBDelta > expectedWalletShare ? walletBDelta - expectedWalletShare : expectedWalletShare - walletBDelta;
+
+  if (poolDiff <= 1n && walletDiff <= 1n) {
+    addLog(state, `✅ SPLIT VERIFIED: Revenue split correctly (${expectedSplitRatio / 100}% to pool, ${100 - expectedSplitRatio / 100}% to wallet).`);
+  } else {
+    addLog(state, `⚠️ SPLIT MISMATCH: Pool delta ${formatUnits(poolBDelta, USDC_DECIMALS)}, expected ${formatUnits(expectedPoolShare, USDC_DECIMALS)}.`);
+    addLog(state, `⚠️ Wallet delta ${formatUnits(walletBDelta, USDC_DECIMALS)}, expected ${formatUnits(expectedWalletShare, USDC_DECIMALS)}.`);
+  }
+
+  // Update balances in state
+  state.balances = {
+    ...(state.balances ?? {}),
+    poolBUsdc: formatUnits(poolBAssetsAfter, USDC_DECIMALS),
+    agentBSmartUsdc: formatUnits(agentBWalletAfter, USDC_DECIMALS),
+  };
 }
 
 async function main() {

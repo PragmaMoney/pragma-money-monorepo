@@ -102,6 +102,7 @@ async function registerAgentViaProxy(
   walletData: WalletData,
   name: string,
   provider: JsonRpcProvider,
+  fundingModel: "PROXY_WRAPPED" | "NATIVE_X402" = "PROXY_WRAPPED",
 ): Promise<Registration> {
   const operatorAddress = walletData.address;
 
@@ -205,16 +206,17 @@ async function registerAgentViaProxy(
 
   // Phase 3: Finalize
   await new Promise((r) => setTimeout(r, 3000));
-  console.log(`    Phase 3: Creating pool...`);
+  const skipPool = fundingModel === "NATIVE_X402";
+  console.log(`    Phase 3: ${skipPool ? "Finalizing (no pool)" : "Creating pool"}...`);
   const finalRes = await fetch(`${RELAYER_URL}/register-agent/finalize`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ operatorAddress, agentId }),
+    body: JSON.stringify({ operatorAddress, agentId, skipPool }),
   });
   const finalJson = await finalRes.json() as { error?: string; poolAddress?: string };
   if (finalJson.error) throw new Error(`Finalize failed: ${finalJson.error}`);
   const poolAddress = finalJson.poolAddress as string;
-  console.log(`    poolAddress: ${poolAddress}`);
+  console.log(`    poolAddress: ${poolAddress || "(none - NATIVE_X402)"}`);
 
   const registration: Registration = {
     agentId,
