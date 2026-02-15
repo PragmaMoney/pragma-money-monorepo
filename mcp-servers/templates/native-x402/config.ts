@@ -10,6 +10,29 @@ import { MCPServiceConfig } from "../../shared/types";
  *
  * Update these values for your specific service.
  */
+
+// x402 v2 Configuration Constants
+export const x402Config = {
+  // x402 protocol version
+  version: 2,
+
+  // Network in CAIP-2 format (eip155:<chainId>)
+  // Monad Testnet chain ID: 10143
+  network: "eip155:10143" as const,
+
+  // Default facilitator URL for payment facilitation
+  facilitatorUrl: process.env.FACILITATOR_URL || "https://facilitator.pragma.money",
+
+  // USDC token address on Monad Testnet
+  asset: process.env.USDC_ADDRESS || "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+
+  // x402 Gateway contract address
+  gatewayContract: process.env.GATEWAY_ADDRESS || "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
+
+  // Default payment timeout in seconds
+  maxTimeoutSeconds: 300,
+};
+
 export const config: MCPServiceConfig = {
   name: "my-native-x402-service",
   description: "A self-funded MCP service with native x402 payments",

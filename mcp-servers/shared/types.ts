@@ -73,21 +73,36 @@ export interface MCPError {
   data?: unknown;
 }
 
-// x402 types
-export interface PaymentRequirements {
-  x402Version: string;
-  accepts: PaymentOption[];
-  gatewayContract?: string;
-  serviceId?: string;
+// x402 v2 types
+
+/** x402 v2 accepted object - payment requirements */
+export interface PaymentRequirementsAccept {
+  scheme: string;
+  network: string;
+  /** Amount in smallest token units (e.g. "1000" for 0.001 USDC) */
+  amount: string;
+  payTo: string;
+  maxTimeoutSeconds: number;
+  asset: string;
+  extra: {
+    name: string;
+    version: string;
+  };
 }
 
-export interface PaymentOption {
-  scheme: "exact";
-  network: string;
-  maxAmountRequired: string;
-  payTo: string;
-  asset: string;
-  maxTimeoutSeconds?: number;
+/** x402 v2 resource object */
+export interface X402Resource {
+  url: string;
+  description: string;
+  mimeType: string;
+}
+
+/** x402 v2 402 response body */
+export interface X402ErrorResponse {
+  x402Version: number;
+  error?: string;
+  accepts: PaymentRequirementsAccept[];
+  resource: X402Resource;
 }
 
 // Tool handler type

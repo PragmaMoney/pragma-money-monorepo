@@ -7,7 +7,9 @@ import {
   MCPResponse,
   MCPTool,
   ToolHandler,
-  PaymentRequirements,
+  X402ErrorResponse,
+  PaymentRequirementsAccept,
+  X402Resource,
 } from "./types";
 import { verifyPayment } from "./x402-handler";
 
@@ -209,26 +211,114 @@ export class MCPServer {
     const toolName = params?.name;
     const toolArgs = params?.arguments || {};
 
-    // Check payment
-    const paymentId = req.headers["x-payment-id"] as string;
+    // Check payment - support both v2 (PAYMENT-SIGNATURE) and legacy (x-payment-id)
+    const paymentSignature = req.headers["payment-signature"] as string | undefined;
+    const paymentId = req.headers["x-payment-id"] as string | undefined;
 
-    if (!paymentId) {
-      const requirements = await this.getPaymentRequirements();
+    if (!paymentSignature && !paymentId) {
+      const requirements = await this.getPaymentRequirements(req.originalUrl);
+      // Set PAYMENT-REQUIRED header with base64-encoded body (x402 v2)
+      res.setHeader(
+        "PAYMENT-REQUIRED",
+        Buffer.from(JSON.stringify(requirements)).toString("base64")
+      );
       return res.status(402).json(requirements);
     }
 
-    // Verify payment on-chain
-    const isValid = await verifyPayment(
-      paymentId,
-      BigInt(this.config.pricePerCall)
-    );
+    // Handle PAYMENT-SIGNATURE (x402 v2 facilitator flow)
+    if (paymentSignature) {
+      try {
+        // Decode PAYMENT-SIGNATURE (base64 or raw JSON)
+        let paymentData: unknown;
+        try {
+          const decoded = Buffer.from(paymentSignature, "base64").toString("utf-8");
+          paymentData = JSON.parse(decoded);
+        } catch {
+          try {
+            paymentData = JSON.parse(paymentSignature);
+          } catch {
+            return res.status(400).json({
+              jsonrpc: "2.0",
+              error: { code: -32000, message: "Invalid PAYMENT-SIGNATURE format" },
+              id: mcpReq.id,
+            });
+          }
+        }
 
-    if (!isValid) {
-      return res.status(402).json({
-        jsonrpc: "2.0",
-        error: { code: -32000, message: "Payment verification failed" },
-        id: mcpReq.id,
-      });
+        // Forward to Monad facilitator for settlement
+        const facilitatorUrl = process.env.FACILITATOR_URL || "https://x402-facilitator.molandak.org";
+        const settleResponse = await fetch(`${facilitatorUrl}/settle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(paymentData),
+        });
+
+        const responseText = await settleResponse.text();
+        let settleResult: {
+          success?: boolean;
+          errorReason?: string;
+          error?: string;
+          transaction?: string;
+        };
+
+        try {
+          settleResult = JSON.parse(responseText);
+        } catch {
+          return res.status(502).json({
+            jsonrpc: "2.0",
+            error: { code: -32000, message: "Facilitator error", data: responseText.slice(0, 200) },
+            id: mcpReq.id,
+          });
+        }
+
+        if (!settleResult.success) {
+          return res.status(402).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: "Payment settlement failed",
+              data: settleResult.errorReason || settleResult.error,
+            },
+            id: mcpReq.id,
+          });
+        }
+
+        // Set PAYMENT-RESPONSE header on success (x402 v2)
+        res.setHeader("PAYMENT-RESPONSE", Buffer.from(JSON.stringify({
+          success: true,
+          transaction: settleResult.transaction,
+        })).toString("base64"));
+
+        // Continue to execute tool below
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Payment verification error";
+        console.error(`[mcp-server] PAYMENT-SIGNATURE error: ${message}`);
+        return res.status(500).json({
+          jsonrpc: "2.0",
+          error: { code: -32000, message },
+          id: mcpReq.id,
+        });
+      }
+    } else if (paymentId) {
+      // Legacy: Verify payment on-chain via x-payment-id
+      const isValid = await verifyPayment(
+        paymentId,
+        BigInt(this.config.pricePerCall)
+      );
+
+      if (!isValid) {
+        return res.status(402).json({
+          jsonrpc: "2.0",
+          error: { code: -32000, message: "Payment verification failed" },
+          id: mcpReq.id,
+        });
+      }
+
+      // Set PAYMENT-RESPONSE header on success (x402 v2 compatibility)
+      res.setHeader("PAYMENT-RESPONSE", Buffer.from(JSON.stringify({
+        success: true,
+        paymentId,
+      })).toString("base64"));
     }
 
     // Execute tool
@@ -261,22 +351,93 @@ export class MCPServer {
   }
 
   private async handleToolCall(toolName: string, req: Request, res: Response) {
-    // Check payment
-    const paymentId = req.headers["x-payment-id"] as string;
+    // Check payment - support both v2 (PAYMENT-SIGNATURE) and legacy (x-payment-id)
+    const paymentSignature = req.headers["payment-signature"] as string | undefined;
+    const paymentId = req.headers["x-payment-id"] as string | undefined;
 
-    if (!paymentId) {
-      const requirements = await this.getPaymentRequirements();
+    if (!paymentSignature && !paymentId) {
+      const requirements = await this.getPaymentRequirements(req.originalUrl);
+      // Set PAYMENT-REQUIRED header with base64-encoded body (x402 v2)
+      res.setHeader(
+        "PAYMENT-REQUIRED",
+        Buffer.from(JSON.stringify(requirements)).toString("base64")
+      );
       return res.status(402).json(requirements);
     }
 
-    // Verify payment
-    const isValid = await verifyPayment(
-      paymentId,
-      BigInt(this.config.pricePerCall)
-    );
+    // Handle PAYMENT-SIGNATURE (x402 v2 facilitator flow)
+    if (paymentSignature) {
+      try {
+        // Decode PAYMENT-SIGNATURE (base64 or raw JSON)
+        let paymentData: unknown;
+        try {
+          const decoded = Buffer.from(paymentSignature, "base64").toString("utf-8");
+          paymentData = JSON.parse(decoded);
+        } catch {
+          try {
+            paymentData = JSON.parse(paymentSignature);
+          } catch {
+            return res.status(400).json({ error: "Invalid PAYMENT-SIGNATURE format" });
+          }
+        }
 
-    if (!isValid) {
-      return res.status(402).json({ error: "Payment verification failed" });
+        // Forward to Monad facilitator for settlement
+        const facilitatorUrl = process.env.FACILITATOR_URL || "https://x402-facilitator.molandak.org";
+        const settleResponse = await fetch(`${facilitatorUrl}/settle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(paymentData),
+        });
+
+        const responseText = await settleResponse.text();
+        let settleResult: {
+          success?: boolean;
+          errorReason?: string;
+          error?: string;
+          transaction?: string;
+        };
+
+        try {
+          settleResult = JSON.parse(responseText);
+        } catch {
+          return res.status(502).json({ error: "Facilitator error", details: responseText.slice(0, 200) });
+        }
+
+        if (!settleResult.success) {
+          return res.status(402).json({
+            error: "Payment settlement failed",
+            details: settleResult.errorReason || settleResult.error,
+          });
+        }
+
+        // Set PAYMENT-RESPONSE header on success (x402 v2)
+        res.setHeader("PAYMENT-RESPONSE", Buffer.from(JSON.stringify({
+          success: true,
+          transaction: settleResult.transaction,
+        })).toString("base64"));
+
+        // Continue to execute tool below
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Payment verification error";
+        console.error(`[mcp-server] PAYMENT-SIGNATURE error: ${message}`);
+        return res.status(500).json({ error: message });
+      }
+    } else if (paymentId) {
+      // Legacy: Verify payment on-chain via x-payment-id
+      const isValid = await verifyPayment(
+        paymentId,
+        BigInt(this.config.pricePerCall)
+      );
+
+      if (!isValid) {
+        return res.status(402).json({ error: "Payment verification failed" });
+      }
+
+      // Set PAYMENT-RESPONSE header on success (x402 v2 compatibility)
+      res.setHeader("PAYMENT-RESPONSE", Buffer.from(JSON.stringify({
+        success: true,
+        paymentId,
+      })).toString("base64"));
     }
 
     // Execute tool
@@ -296,22 +457,34 @@ export class MCPServer {
     }
   }
 
-  private async getPaymentRequirements(): Promise<PaymentRequirements> {
+  private async getPaymentRequirements(requestUrl?: string): Promise<X402ErrorResponse> {
     const payTo = await this.resolvePayTo();
-    return {
-      x402Version: "1.0",
-      accepts: [
-        {
-          scheme: "exact",
-          network: "monad-testnet",
-          maxAmountRequired: this.config.pricePerCall,
-          payTo,
-          asset: process.env.USDC_ADDRESS || "0x534b2f3A21130d7a60830c2Df862319e593943A3",
-          maxTimeoutSeconds: 300,
+
+    const accepts: PaymentRequirementsAccept[] = [
+      {
+        scheme: "exact",
+        network: "eip155:10143", // CAIP-2 format for Monad Testnet
+        amount: this.config.pricePerCall,
+        payTo,
+        asset: process.env.USDC_ADDRESS || "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+        maxTimeoutSeconds: 300,
+        extra: {
+          name: "USDC",
+          version: "2",
         },
-      ],
-      gatewayContract: process.env.GATEWAY_ADDRESS || "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
-      serviceId: this.serviceId || this.config.name,
+      },
+    ];
+
+    const resource: X402Resource = {
+      url: requestUrl || `/mcp`,
+      description: this.config.description,
+      mimeType: "application/json",
+    };
+
+    return {
+      x402Version: 2,
+      accepts,
+      resource,
     };
   }
 

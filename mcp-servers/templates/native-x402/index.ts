@@ -7,7 +7,7 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 // Use require() for modules that depend on env vars at load time
 // ES imports are hoisted, so they run before dotenv.config()
 const { MCPServer } = require("../../shared/mcp-server");
-const { config, settings } = require("./config");
+const { config, settings, x402Config } = require("./config");
 const { exampleTool } = require("./tools/example-tool");
 const { pythPrice } = require("./tools/pyth-price");
 
@@ -46,11 +46,15 @@ server.start(settings.port);
 
 console.log(`
 ===========================================
-  Native x402 MCP Service
+  Native x402 MCP Service (v2)
 ===========================================
+  x402 Version: ${x402Config.version}
+  Network: ${x402Config.network} (CAIP-2)
   Funding Model: NATIVE_X402 (Direct payments)
   Price: $${parseInt(config.pricePerCall) / 1_000_000} USDC per call
   Owner: ${settings.ownerAddress}
+  Gateway: ${x402Config.gatewayContract}
+  Facilitator: ${x402Config.facilitatorUrl}
   Mock Payments: ${settings.mockPayments ? "enabled" : "disabled"}
 
   Tools:

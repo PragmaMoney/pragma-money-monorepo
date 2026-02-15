@@ -104,3 +104,11 @@ export const settings = {
   // API Key
   weatherApiKey: process.env.WEATHER_API_KEY || "",
 };
+
+// x402 v2 configuration
+export const x402Config = {
+  network: "eip155:10143", // Monad testnet CAIP-2
+  usdcAddress: "0x534b2f3A21130d7a60830c2Df862319e593943A3",
+  gatewayAddress: "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
+  facilitatorUrl: "https://x402-facilitator.molandak.org",
+};
