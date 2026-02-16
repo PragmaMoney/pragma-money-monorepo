@@ -28,8 +28,19 @@ export function ContentRenderer({ content, contentType, className }: ContentRend
   const [copied, setCopied] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const isMCPContent = Array.isArray(content) &&
-    content.every(item => item && typeof item === "object" && "type" in item);
+  // Check if content is MCP format (array of {type, ...} items)
+  // Also handle wrapped format: { success: true, content: [...] }
+  const unwrappedContent = useMemo(() => {
+    if (Array.isArray(content)) return content;
+    if (content && typeof content === "object" && "content" in content) {
+      const wrapped = content as { content?: unknown };
+      if (Array.isArray(wrapped.content)) return wrapped.content;
+    }
+    return content;
+  }, [content]);
+
+  const isMCPContent = Array.isArray(unwrappedContent) &&
+    unwrappedContent.every(item => item && typeof item === "object" && "type" in item);
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -96,7 +107,7 @@ export function ContentRenderer({ content, contentType, className }: ContentRend
 
   return (
     <div className={cn("space-y-4", className)}>
-      {(content as MCPContent[]).map((item, index) => {
+      {(unwrappedContent as MCPContent[]).map((item, index) => {
         if (item.type === "text") {
           let displayContent = item.text || "";
           const isMarkdown = item.mimeType === "text/markdown" ||
