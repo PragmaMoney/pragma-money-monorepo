@@ -23,7 +23,7 @@ export default function HomePage() {
 
           <p className="font-mono text-lg text-white/60 max-w-xl leading-relaxed mb-16">
             // PAYMENT INFRASTRUCTURE FOR AUTONOMOUS AI AGENTS.<br />
-            // X402 PROTOCOL ON BASE.<br />
+            // X402 PROTOCOL ON MONAD.<br />
             // CONSTRAINED WALLETS & INSTANT SETTLEMENT.
           </p>
 
