@@ -696,9 +696,16 @@ export default function SimulationPage() {
     }
   };
 
+  const activeStepRef = useRef(activeStep);
+  useEffect(() => {
+    activeStepRef.current = activeStep;
+  }, [activeStep]);
+
   useEffect(() => {
     if (activeStep) return;
     const intervalId = window.setInterval(() => {
+      // Don't start new wander if a step just became active
+      if (activeStepRef.current) return;
       (["A", "B"] as AgentKey[]).forEach((key) => {
         const current = agentsRef.current[key];
         if (current.walking) return;
@@ -711,10 +718,17 @@ export default function SimulationPage() {
         ].sort(() => Math.random() - 0.5);
         const steps = 3 + Math.floor(Math.random() * 3); // 3-5 tiles
         void (async () => {
+          // Bail if a step started
+          if (activeStepRef.current) return;
           setAgents((prev) => ({ ...prev, [key]: { ...prev[key], walking: true, state: "wandering" } }));
           for (const dir of directions) {
             let moved = false;
             for (let i = 0; i < steps; i += 1) {
+              // Stop wandering if a step started
+              if (activeStepRef.current) {
+                setAgents((prev) => ({ ...prev, [key]: { ...prev[key], walking: false, state: "idle" } }));
+                return;
+              }
               const before = agentsRef.current[key];
               await stepAgent(key, dir.dx, dir.dy, "wandering", isWithinWanderBounds);
               const after = agentsRef.current[key];
@@ -1025,7 +1039,7 @@ export default function SimulationPage() {
                     }}
                   >
                     {sprite.speech && (
-                      <div className={`absolute left-1/2 -translate-x-1/2 rounded-md border border-white/20 bg-black/75 px-2 py-1 text-[10px] ${typeof sprite.speech === 'object' && sprite.speech.type === 'image' ? '-top-36 max-w-36' : '-top-7 whitespace-nowrap'}`}>
+                      <div className={`absolute left-1/2 -translate-x-1/2 rounded-md border border-white/20 bg-black/75 px-2 py-1 text-[10px] ${typeof sprite.speech === 'object' && sprite.speech.type === 'image' ? '-top-48 max-w-40' : '-top-7 whitespace-nowrap'}`}>
                         {typeof sprite.speech === 'string' ? (
                           sprite.speech
                         ) : sprite.speech.type === 'image' ? (
@@ -1033,7 +1047,7 @@ export default function SimulationPage() {
                             <img
                               src={sprite.speech.url}
                               alt="Generated"
-                              className="max-h-28 max-w-32 rounded"
+                              className="max-h-36 max-w-36 rounded"
                             />
                             {sprite.speech.caption && (
                               <span className="text-[8px] text-white/70">{sprite.speech.caption}</span>
