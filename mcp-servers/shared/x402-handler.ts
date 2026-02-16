@@ -8,7 +8,7 @@ const GATEWAY_ABI = [
 const FACILITATOR_URL = "https://x402-facilitator.molandak.org";
 
 // Default gateway address on Monad Testnet
-const DEFAULT_GATEWAY_ADDRESS = "0x76f3a9aE46D58761f073a8686Eb60194B1917E27";
+const DEFAULT_GATEWAY_ADDRESS = "0x2B374335B3f3BBa301210a87dF6FB06a18125935";
 
 // Cache of used payment IDs (prevent replay)
 const usedPaymentIds = new Set<string>();

@@ -57,6 +57,6 @@ export const settings = {
 export const x402Config = {
   network: "eip155:10143", // Monad testnet CAIP-2
   usdcAddress: "0x534b2f3A21130d7a60830c2Df862319e593943A3",
-  gatewayAddress: "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
+  gatewayAddress: "0x2B374335B3f3BBa301210a87dF6FB06a18125935",
   facilitatorUrl: "https://x402-facilitator.molandak.org",
 };

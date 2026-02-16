@@ -40,10 +40,10 @@ export const config: Config = {
   publicUrl: process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 4402}`,
   gatewayAddress:
     process.env.GATEWAY_ADDRESS ||
-    "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
+    "0x2B374335B3f3BBa301210a87dF6FB06a18125935",
   serviceRegistryAddress:
     process.env.SERVICE_REGISTRY_ADDRESS ||
-    "0x7fc78b9769CF0739a5AC2a12D6BfCb121De12A59",
+    "0x1d8E4C83BADf70F2AE7F03bc41bD450Bcc9FD7f8",
   gatewayRpcUrl:
     process.env.GATEWAY_RPC_URL || "https://monad-testnet.g.alchemy.com/v2/4hrf7RNwCc-ScxIMXTvkM1wMNgXEQvFu",
   x402Network:
@@ -58,9 +58,9 @@ export const config: Config = {
   identityRegistryAddress:
     process.env.IDENTITY_REGISTRY_ADDRESS || "0x8004A818BFB912233c491871b3d84c89A494BD9e",
   agentAccountFactoryAddress:
-    process.env.AGENT_ACCOUNT_FACTORY_ADDRESS || "0x77F3195CE8E69A76345dBfe5cdAa998a59dE99f5",
+    process.env.AGENT_ACCOUNT_FACTORY_ADDRESS || "0xb7769DF02e0D8039c72A9b4BbABE3d2855C54711",
   agentPoolFactoryAddress:
-    process.env.AGENT_POOL_FACTORY_ADDRESS || "0x42C7A12EA8AcD87367D1d52cb6a6ad6Ca306e9C0",
+    process.env.AGENT_POOL_FACTORY_ADDRESS || "0x58C6C01920cf8b216aB303815A818D6E890F342a",
   fundAmountEoa: process.env.FUND_AMOUNT_EOA || "0.0005",
   uniswapUniversalRouterAddress:
     process.env.UNISWAP_UNIVERSAL_ROUTER_ADDRESS ||
@@ -74,5 +74,5 @@ export const config: Config = {
   rfusdcAddress:
     process.env.RFUSDC_ADDRESS || "0x0000000000000000000000000000000000000000",
   reputationReporterAddress:
-    process.env.REPUTATION_REPORTER_ADDRESS || "0x8F10B8537907692d36E078f23525FAFF2756c5ab",
+    process.env.REPUTATION_REPORTER_ADDRESS || "0xFC121b8b58ceaAe84b4461Ded2806C36904A773E",
 };

@@ -67,7 +67,7 @@ export class MCPServer {
       const rpcUrl = process.env.RPC_URL || "https://testnet-rpc.monad.xyz";
       const provider = new ethers.JsonRpcProvider(rpcUrl);
 
-      const serviceRegistryAddress = process.env.SERVICE_REGISTRY_ADDRESS || "0x7fc78b9769CF0739a5AC2a12D6BfCb121De12A59";
+      const serviceRegistryAddress = process.env.SERVICE_REGISTRY_ADDRESS || "0x1d8E4C83BADf70F2AE7F03bc41bD450Bcc9FD7f8";
       const identityRegistryAddress = process.env.IDENTITY_REGISTRY_ADDRESS || "0x8004A818BFB912233c491871b3d84c89A494BD9e";
 
       // Get service from registry

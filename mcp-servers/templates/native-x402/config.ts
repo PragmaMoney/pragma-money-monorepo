@@ -27,7 +27,7 @@ export const x402Config = {
   asset: process.env.USDC_ADDRESS || "0x534b2f3A21130d7a60830c2Df862319e593943A3",
 
   // x402 Gateway contract address
-  gatewayContract: process.env.GATEWAY_ADDRESS || "0x76f3a9aE46D58761f073a8686Eb60194B1917E27",
+  gatewayContract: process.env.GATEWAY_ADDRESS || "0x2B374335B3f3BBa301210a87dF6FB06a18125935",
 
   // Default payment timeout in seconds
   maxTimeoutSeconds: 300,
